@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/PENPOT LAYOUTS/css/community-feed.css">
+<title>UkayFinds - Community Feed</title>
+</head>
+<body>
+
+<section id="community-feed-view">
+  <!-- HEADER — identical structure/classes to find-a-store.html so both pages share one look -->
+  <header class="app-header">
+    <div class="brand-logo">UkayFinds</div>
+
+    <nav class="app-nav">
+      <a href="find-a-store.html" class="nav-link">Find A Store</a>
+      <a href="#" class="nav-link active">Community Feed</a>
+      <a href="#" class="nav-link">Notifications</a>
+    </nav>
+
+    <div class="user-menu-container">
+      <button id="user-avatar-btn" class="avatar-btn" aria-haspopup="true" aria-expanded="false">R</button>
+      <div id="user-dropdown" class="user-dropdown">
+        <div class="dropdown-header">
+          <div class="dropdown-avatar">R</div>
+          <div>
+            <strong id="dropdown-name">Remi Findlay</strong>
+            <small id="dropdown-email">remifinds@gmail.com</small>
+          </div>
+        </div>
+        <hr>
+        <ul class="dropdown-links">
+          <li><a href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved Spots</a></li>
+          <li><a href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 8h8M8 16h5"/></svg> My Shared Hauls</a></li>
+          <li><a href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg> Account Settings</a></li>
+        </ul>
+        <hr>
+        <a href="index.html" class="logout-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          Log Out
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN FEED -->
+  <main class="feed-main-container">
+    <div class="feed-hero">
+      <h2>Thrift Hauls &amp; Community Feed</h2>
+      <p>Discover outfit inspirations, price breakdowns, and local gems shared by thrifters.</p>
+    </div>
+
+    <div class="filter-pills" id="filter-pills">
+      <button type="button" class="pill active" data-filter="all">All Hauls</button>
+      <button type="button" class="pill" data-filter="near-me">Near Me</button>
+      <button type="button" class="pill" data-filter="trending">Trending</button>
+      <button type="button" class="pill" data-filter="budget">Under ₱200</button>
+    </div>
+
+    <div class="haul-masonry" id="haul-masonry"><!-- populated by JS --></div>
+
+    <p class="no-hauls hidden" id="no-hauls">No hauls match this filter yet — be the first to share one!</p>
+  </main>
+
+  <button type="button" id="add-haul-btn" class="add-haul-btn" title="Share a haul">+</button>
+</section>
+
+<script src="/PENPOT LAYOUTS/js/community-feed.js"></script>
+</body>
+</html>

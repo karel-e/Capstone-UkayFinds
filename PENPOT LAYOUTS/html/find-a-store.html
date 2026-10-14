@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="/PENPOT LAYOUTS/css/find-a-store.css">
+<title>UkayFinds - Find A Store</title>
+</head>
+<body>
+
+<section id="find-a-store-view">
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="brand-logo">UkayFinds</div>
+
+    <nav class="app-nav">
+      <a href="#" class="nav-link active" data-nav="find-a-store">Find A Store</a>
+      <a href="#" class="nav-link" data-nav="community">Community Feed</a>
+      <a href="#" class="nav-link" data-nav="notifications">Notifications</a>
+    </nav>
+
+    <div class="user-menu-container">
+      <button id="user-avatar-btn" class="avatar-btn" aria-haspopup="true" aria-expanded="false">R</button>
+      <div id="user-dropdown" class="user-dropdown">
+        <div class="dropdown-header">
+          <div class="dropdown-avatar">R</div>
+          <div>
+            <strong id="dropdown-name">Remi Findlay</strong>
+            <small id="dropdown-email">remifinds@gmail.com</small>
+          </div>
+        </div>
+        <hr>
+        <ul class="dropdown-links">
+          <li><a href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved Spots</a></li>
+          <li><a href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 8h8M8 16h5"/></svg> My Shared Hauls</a></li>
+          <li><a href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg> Account Settings</a></li>
+        </ul>
+        <hr>
+        <a href="index.html" class="logout-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          Log Out
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN DASHBOARD -->
+  <main class="store-main-container">
+    <div class="store-hero-center">
+      <h2>Find Your Next Local Thrift Gem</h2>
+      <p>Locate local ukay-ukay shops, operating hours and community spots near you.</p>
+
+      <div class="search-input-wrapper">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="dashboard-search" placeholder="Search by city, street market, or budget..." />
+      </div>
+    </div>
+
+    <div class="dashboard-card-wrapper">
+
+      <!-- SIDEBAR -->
+      <div class="store-list-sidebar">
+        <div class="sidebar-top">
+          <span class="spots-count">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c3aed" stroke="#7c3aed"><path d="M12 21s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 7.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="9" r="3" fill="#fff"/></svg>
+            <span id="spots-count-text">12 Spots Found</span>
+          </span>
+          <div class="sort-by">
+            Sort by:
+            <select id="sort-select">
+              <option value="nearby">Nearby</option>
+              <option value="rating">Top Rated</option>
+              <option value="budget">On Budget</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="store-cards-list" id="store-cards-list"><!-- populated by JS --></div>
+      </div>
+
+      <!-- MAP -->
+      <div class="store-map-container">
+        <div class="map-toolbar">
+          <div class="map-toggle">
+            <button type="button" class="map-toggle-btn active" data-layer="map">Map</button>
+            <button type="button" class="map-toggle-btn" data-layer="satellite">Satellite</button>
+          </div>
+        </div>
+        <div id="dashboard-map"></div>
+        <button type="button" id="locate-btn" class="locate-btn" title="Show my location">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        </button>
+        <button type="button" id="add-spot-btn" class="add-spot-btn" title="Suggest a new spot">+</button>
+      </div>
+
+    </div>
+  </main>
+</section>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/PENPOT LAYOUTS/js/find-a-store.js"></script>
+</body>
+</html>

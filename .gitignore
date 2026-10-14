@@ -1,0 +1,13 @@
+# Secrets / config
+.env
+config.php
+api/test-connection.php
+
+# User uploads
+uploads/
+
+# Logs and system files
+*.log
+.DS_Store
+Thumbs.db
+.vscode/

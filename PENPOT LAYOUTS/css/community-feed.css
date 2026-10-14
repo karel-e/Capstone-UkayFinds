@@ -1,0 +1,212 @@
+/* ==========================================================================
+   1. GOOGLE FONTS IMPORT
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+/* ==========================================================================
+   2. COLOR PALETTE & DESIGN TOKENS
+   -- same tokens as find-a-store.css / the landing page's styles.css so
+      every page in the app stays visually in sync.
+   ========================================================================== */
+:root {
+  --color-primary: #7c3aed;
+  --color-primary-hover: #6d28d9;
+  --color-primary-light: #f3e8ff;
+  --color-primary-light-hover: #e9d5ff;
+  --color-dark: #111827;
+  --color-body: #4b5563;
+  --color-muted: #9ca3af;
+  --color-border: #e5e7eb;
+  --color-border-soft: #f3f4f6;
+  --color-bg-light: #fafafa;
+  --color-bg-tint: #f5f3ff;
+  --color-white: #ffffff;
+  --color-danger: #ef4444;
+  --color-success: #10b981;
+
+  --font-actionable: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  --max-width: 1120px;
+  --radius-lg: 16px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-body);
+  background-color: var(--color-white);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { font-family: var(--font-actionable); color: var(--color-dark); font-weight: 700; line-height: 1.2; }
+button, a { font-family: var(--font-actionable); }
+a { text-decoration: none; }
+
+#community-feed-view { min-height: 100vh; width: 100%; display: flex; flex-direction: column; position: relative; }
+
+/* ==========================================================================
+   3. HEADER — identical to find-a-store.css
+   ========================================================================== */
+.app-header {
+  background-color: var(--color-white);
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  width: 100%;
+}
+.brand-logo { font-size: 18px; font-weight: 800; color: var(--color-dark); }
+.app-nav { display: flex; gap: 32px; }
+.nav-link { font-size: 14px; font-weight: 500; color: var(--color-body); padding-bottom: 22px; border-bottom: 2px solid transparent; }
+.nav-link.active { color: var(--color-dark); font-weight: 700; border-bottom-color: var(--color-primary); }
+
+.user-menu-container { position: relative; display: flex; align-items: center; }
+.avatar-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  background-color: var(--color-primary-light); color: var(--color-primary);
+  border: 1px solid var(--color-primary-light-hover);
+  font-weight: 700; font-size: 14px; cursor: pointer;
+}
+.avatar-btn:hover { background-color: var(--color-primary-light-hover); }
+
+.user-dropdown {
+  position: absolute; right: 0; top: 48px; width: 240px;
+  background-color: var(--color-white); border: 1px solid var(--color-border);
+  border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+  padding: 16px; z-index: 200; display: none; flex-direction: column; gap: 12px;
+}
+.user-dropdown.open { display: flex; }
+.dropdown-header { display: flex; align-items: center; gap: 10px; }
+.dropdown-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background-color: var(--color-primary-light); color: var(--color-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; flex-shrink: 0;
+}
+.dropdown-header strong { display: block; font-size: 14px; color: var(--color-dark); }
+.dropdown-header small { font-size: 12px; color: var(--color-muted); }
+.user-dropdown hr { border: none; border-top: 1px solid var(--color-border-soft); }
+.dropdown-links { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.dropdown-links a {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--color-body); font-weight: 500;
+  padding: 6px 4px; border-radius: 6px; transition: color .15s ease, background-color .15s ease;
+}
+.dropdown-links a:hover { color: var(--color-primary); background-color: var(--color-primary-light); }
+.logout-link { display: flex; align-items: center; gap: 10px; color: var(--color-danger); font-size: 13px; font-weight: 600; padding: 4px; }
+
+/* ==========================================================================
+   4. FEED HERO + FILTER PILLS
+   ========================================================================== */
+.feed-main-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+  width: 100%;
+  flex: 1;
+}
+
+.feed-hero { margin-bottom: 20px; }
+.feed-hero h2 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+.feed-hero p { font-size: 14px; color: var(--color-muted); }
+
+.filter-pills { display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
+.pill {
+  background-color: var(--color-border-soft);
+  color: var(--color-body);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+.pill:hover { background-color: var(--color-primary-light-hover); color: var(--color-dark); }
+.pill.active { background-color: var(--color-primary); color: var(--color-white); }
+
+/* ==========================================================================
+   5. MASONRY GRID
+   ========================================================================== */
+.haul-masonry {
+  column-count: 4;
+  column-gap: 24px;
+}
+
+.haul-card {
+  position: relative;
+  break-inside: avoid;
+  margin-bottom: 24px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background-color: var(--color-border);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-end;
+}
+
+.haul-card .haul-fill {
+  width: 100%;
+  background-color: #b0b3ba;
+  border-radius: var(--radius-lg);
+}
+
+.haul-card .haul-caption {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 12px 14px;
+  background: linear-gradient(to top, rgba(17,24,39,0.65), rgba(17,24,39,0));
+  color: var(--color-white);
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.haul-card:hover .haul-caption { opacity: 1; }
+.haul-card .haul-caption span { display: block; font-weight: 400; font-size: 11px; opacity: 0.85; }
+
+.haul-card.filtered-out { display: none; }
+
+.no-hauls { text-align: center; color: var(--color-muted); font-size: 14px; padding: 40px 0; }
+.no-hauls.hidden { display: none; }
+
+/* ==========================================================================
+   6. FLOATING ADD BUTTON
+   ========================================================================== */
+.add-haul-btn {
+  position: fixed;
+  right: 32px;
+  bottom: 32px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-white);
+  color: var(--color-primary);
+  font-size: 26px;
+  font-weight: 400;
+  cursor: pointer;
+  box-shadow: 0 8px 20px -4px rgba(0,0,0,0.2);
+  transition: transform .15s ease, background-color .15s ease;
+}
+.add-haul-btn:hover { background-color: var(--color-primary-light); transform: scale(1.05); }
+
+@media (max-width: 980px) { .haul-masonry { column-count: 3; } }
+@media (max-width: 720px) {
+  .app-header { flex-wrap: wrap; height: auto; padding: 12px 16px; gap: 12px; }
+  .app-nav { order: 3; width: 100%; justify-content: center; }
+  .haul-masonry { column-count: 2; }
+}
+@media (max-width: 460px) { .haul-masonry { column-count: 1; } }

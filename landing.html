@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="styles.css">
+<title>UkayFinds - Thrift Smarter, Dress Better</title>
+</head>
+<body>
+
+<!-- ======================================================================
+     LANDING VIEW
+     ====================================================================== -->
+<div id="landing-view">
+
+  <header class="site-header">
+    <nav>
+      <a href="#hero" class="brand" aria-label="UkayFinds Home">UkayFinds</a>
+      <ul>
+        <li><a href="#features">About</a></li>
+        <li><a href="#store-finder">Find A Store</a></li>
+        <li><a href="#community-hauls">Community</a></li>
+      </ul>
+      <a href="#signup" class="open-signup-modal btn-primary">Sign Up</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- SECTION 1: HERO -->
+    <section id="hero">
+      <div>
+        <h1>Thrift Smarter, <br>dress better.</h1>
+        <p>Connect with a community of thrifters, locate local spots, and give pre-loved fashion a second story.</p>
+        <div>
+          <a href="#community-hauls" class="btn-primary">Join the Community</a>
+          <a href="#signup" class="open-signup-modal btn-secondary">Find Nearby Stores</a>
+        </div>
+      </div>
+
+      <div>
+        <figure>
+          <img src="STOCKIMAGES/img1.jpg" alt="Consolacion Public Market thrift stall with clothes hanging outside"/>
+        </figure>
+        <figure>
+          <img src="STOCKIMAGES/img2.jpg" alt="Thrifter browsing through rack of vintage clothing"/>
+          <figcaption class="badge-top-left">
+            <img src="https://api.iconify.design/mdi/map-marker.svg?color=%237c3aed" alt="pin" class="badge-icon"/>
+            <p>Consolacion Public Market</p>
+          </figcaption>
+        </figure>
+        <figure>
+          <img src="STOCKIMAGES/img3.jpg" alt="Customer sorting through ukay-ukay bins"/>
+          <figcaption class="badge-bottom-left">
+            <img src="https://api.iconify.design/mdi/star.svg?color=%237c3aed" alt="star" class="badge-icon">
+            <p>4.5 | 150+ Finds Today</p>
+          </figcaption>
+        </figure>
+        <figure>
+          <img src="STOCKIMAGES/img4.jpg" alt="Display of colorful pre-loved shirts"/>
+        </figure>
+      </div>
+    </section>
+
+    <!-- SECTION 2: FEATURES -->
+    <section id="features">
+      <div>
+        <p>WHY UKAYFINDS?</p>
+        <h2>Everything you need to hunt local gems.</h2>
+        <p>From locating hidden street spots to sharing your best thrift hauls.</p>
+      </div>
+      <div>
+        <article>
+          <div class="pin">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 7.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="9" r="3"/></svg>
+          </div>
+          <h3>Pinpoint Local Spots</h3>
+          <p>Locate hidden ukay-ukay spots near you with directions and store hours.</p>
+        </article>
+        <article>
+          <div class="pin">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h10M7 12h10M7 17h6"/></svg>
+          </div>
+          <h3>Match Your Vibe</h3>
+          <p>Get personalized store recommendations based on your style and budget.</p>
+        </article>
+        <article>
+          <div class="pin">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <h3>Real Reviews & Fit Pics</h3>
+          <p>See honest shop ratings, browse outfit photos, and share your best finds.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- SECTION 3: INTERACTIVE STORE FINDER (preview map, logged-out) -->
+    <section id="store-finder">
+      <div>
+        <p>INTERACTIVE STORE FINDER</p>
+        <h2>Find Hidden Ukay Spots Right In Your Neighborhood</h2>
+        <p>Search by city, street market, or budget. Get exact directions, operating hours, and restock alerts before you travel.</p>
+        <a href="#signup" class="open-signup-modal">Launch Store Finder &rarr;</a>
+      </div>
+      <div class="map-wrapper">
+        <div id="map"></div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: REAL THRIFT HAULS -->
+    <section id="community-hauls">
+      <div>
+        <p>REAL THRIFT HAULS</p>
+        <h2>See What Thrifters Are Finding Today.</h2>
+        <p>Real photos, price breakdowns, and store tags shared by local thrifters.</p>
+      </div>
+
+      <div class="haul-grid">
+        <article>
+          <figure><img src="https://placehold.co/300x300/f3e8ff/7c3aed?text=Outfit+1" alt="Overall thrift fit check by @fitbymitz"/></figure>
+          <div>
+            <div><span>@fitbymitz</span><span>Overall</span></div>
+            <p>outfit check &middot; Consolacion Public Market</p>
+            <div><span>₱180 | Total</span><div><button type="button">140 Likes</button><button type="button">Save</button></div></div>
+          </div>
+        </article>
+        <article>
+          <figure><img src="https://placehold.co/300x300/f3e8ff/7c3aed?text=Outfit+2" alt="Knitted jacket fit check by @fitme"/></figure>
+          <div>
+            <div><span>@fitme</span><span>Knitted Jacket</span></div>
+            <p>outfit check &middot; ThriftLift, Consolacion</p>
+            <div><span>₱150 | Total</span><div><button type="button">140 Likes</button><button type="button">Save</button></div></div>
+          </div>
+        </article>
+        <article>
+          <figure><img src="https://placehold.co/300x300/f3e8ff/7c3aed?text=Outfit+3" alt="Overall outfit check by @outfitoftheday"/></figure>
+          <div>
+            <div><span>@outfitoftheday</span><span>Overall</span></div>
+            <p>outfit check &middot; Ukay-Ukay ni Aa</p>
+            <div><span>₱100 | Total</span><div><button type="button">140 Likes</button><button type="button">Save</button></div></div>
+          </div>
+        </article>
+      </div>
+
+      <div class="haul-footer">
+        <a href="#community-hauls">View More Community Hauls &rarr;</a>
+      </div>
+    </section>
+
+    <!-- SECTION 5: CTA BANNER -->
+    <section id="cta-banner">
+      <div>
+        <h2>Ready to Find Your Next Thrift Gem?</h2>
+        <p>Join hundreds of local thrifters discovering hidden spots daily.</p>
+        <a href="#signup" class="open-signup-modal btn-primary">Create Free Account</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- SIGNUP / SIGNIN MODAL -->
+  <div class="modal-overlay" id="signup-modal" aria-hidden="true">
+    <div class="signup-card">
+
+      <div id="signup-view">
+        <header class="signup-header">
+          <h1 class="brand-logo">UkayFinds</h1>
+          <h2>Create Account</h2>
+          <p>Join thrifters sharing local spots & fit pics.</p>
+        </header>
+        <form class="signup-form" id="signup-form" novalidate>
+          <div class="form-group">
+            <label for="signup-username">Username</label>
+            <input type="text" id="signup-username" placeholder="Enter your username" required />
+          </div>
+          <div class="form-group">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" placeholder="Enter your email" required />
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Create Password</label>
+            <input type="password" id="signup-password" placeholder="Enter password" required />
+          </div>
+          <div class="form-group">
+            <label for="signup-confirm">Confirm Password</label>
+            <input type="password" id="signup-confirm" placeholder="Confirm password" required />
+            <span class="form-error" id="signup-error"></span>
+          </div>
+          <button type="submit" class="btn-submit">Create Account</button>
+        </form>
+        <div class="signup-footer">
+          <p>Already have an account? <a id="to-signin-btn">Sign In</a></p>
+        </div>
+      </div>
+
+      <div id="signin-view" style="display:none;">
+        <header class="signup-header">
+          <h1 class="brand-logo">UkayFinds</h1>
+          <h2>Welcome Back</h2>
+          <p>Log in to discover local thrift gems.</p>
+        </header>
+        <p class="form-success hidden" id="post-register-note">Account created — sign in below to continue.</p>
+        <form class="signup-form" id="signin-form" novalidate>
+          <div class="form-group">
+            <label for="signin-email">Email or Username</label>
+            <input type="text" id="signin-email" placeholder="Enter email or username" required />
+          </div>
+          <div class="form-group">
+            <label for="signin-password">Password</label>
+            <input type="password" id="signin-password" placeholder="Enter password" required />
+          </div>
+          <span class="form-error" id="signin-error"></span>
+          <button type="submit" class="btn-submit">Sign In</button>
+        </form>
+        <div class="signup-footer">
+          <p>Don't have an account? <a id="to-signup-btn">Sign Up</a></p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-top">
+      <div>
+        <a href="#hero" class="brand" aria-label="UkayFinds Home">UkayFinds</a>
+        <p>Connecting local thrifters, one spot at a time.</p>
+      </div>
+      <nav aria-label="Footer Navigation">
+        <div>
+          <h3>EXPLORE</h3>
+          <ul>
+            <li><a href="#signup" class="open-signup-modal">Find Stores</a></li>
+            <li><a href="#community-hauls">Community Hauls</a></li>
+            <li><a href="#features">About Us</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>LEGAL AND SOCIAL</h3>
+          <ul>
+            <li><a href="#privacy">Privacy Policy</a></li>
+            <li><a href="#terms">Terms of Service</a></li>
+            <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer">@ukayfinds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 UkayFinds. All rights reserved.</p>
+    </div>
+  </footer>
+
+</div>
+
+<!-- ======================================================================
+     DASHBOARD SHELL — one shared header + 4 switchable views
+     ====================================================================== -->
+<div id="dashboard-shell" class="hidden">
+
+  <header class="app-header">
+    <div class="app-header-inner">
+    <div class="brand-logo">UkayFinds</div>
+
+    <nav class="app-nav">
+      <a href="#" class="nav-link" data-view="find-a-store">Find A Store</a>
+      <a href="#" class="nav-link" data-view="community-feed">Community Feed</a>
+      <a href="#" class="nav-link" data-view="notifications">Notifications</a>
+    </nav>
+
+    <div class="user-menu-container">
+      <button id="user-avatar-btn" class="avatar-btn" aria-haspopup="true" aria-expanded="false">R</button>
+      <div id="user-dropdown" class="user-dropdown">
+        <div class="dropdown-header">
+          <div class="dropdown-avatar">R</div>
+          <div>
+            <strong id="dropdown-name">Remi Findlay</strong>
+            <small id="dropdown-email">remifinds@gmail.com</small>
+          </div>
+        </div>
+        <hr>
+        <ul class="dropdown-links">
+          <li><a href="#" data-view="profile" data-tab="spots"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved Spots</a></li>
+          <li><a href="#" data-view="profile" data-tab="hauls"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 8h8M8 16h5"/></svg> My Shared Hauls</a></li>
+          <li><a href="#" id="account-settings-link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg> Account Settings</a></li>
+        </ul>
+        <hr>
+        <a href="#" id="logout-btn" class="logout-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          Log Out
+        </a>
+      </div>
+    </div>
+  </div>
+  </header>
+
+  <!-- ===================== FIND A STORE ===================== -->
+  <div id="find-a-store-view" class="dash-view hidden">
+    <main class="store-main-container">
+      <div class="store-hero-center">
+        <h2>Find Your Next Local Thrift Gem</h2>
+        <p>Locate local ukay-ukay shops, operating hours and community spots near you.</p>
+
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="dashboard-search" placeholder="Search by city, street market, or budget..." />
+        </div>
+      </div>
+
+      <div class="dashboard-card-wrapper">
+        <div class="store-list-sidebar">
+          <div class="sidebar-top">
+            <span class="spots-count">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c3aed" stroke="#7c3aed"><path d="M12 21s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 7.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="9" r="3" fill="#fff"/></svg>
+              <span id="spots-count-text">Finding spots…</span>
+            </span>
+            <div class="sort-by dropdown" id="sort-dropdown">
+              <button type="button" class="pill dropdown-trigger" id="sort-dropdown-btn">
+              Sort by: 
+              <span class="dropdown-trigger-value" id="sort-value-label">Nearby</span>
+                <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+                <div class="dropdown-menu" id="sort-dropdown-menu">
+                  <button type="button" class="dropdown-item active" data-value="nearby">Nearby</button>
+                  <button type="button" class="dropdown-item" data-value="rating">Top Rated</button>
+                  <button type="button" class="dropdown-item" data-value="budget">On Budget</button>
+                </div>
+            </div>
+          </div>
+
+          <p class="radius-note hidden" id="radius-note">No spots within a 30-minute ride — showing the closest ones anyway.</p>
+
+          <div class="store-cards-list" id="store-cards-list"><!-- populated by JS --></div>
+        </div>
+
+        <div class="store-map-container">
+          <div class="map-toolbar">
+            <div class="map-toggle">
+              <button type="button" class="map-toggle-btn active" data-layer="map">Map</button>
+              <button type="button" class="map-toggle-btn" data-layer="satellite">Satellite</button>
+            </div>
+          </div>
+          <div id="dashboard-map"></div>
+          <button type="button" id="locate-btn" class="locate-btn" title="Show my location">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <button type="button" id="add-spot-btn" class="add-spot-btn" title="Suggest a new spot">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+
+  <!-- ===================== COMMUNITY FEED ===================== -->
+  <div id="community-feed-view" class="dash-view hidden">
+    <main class="feed-main-container">
+      <div class="feed-hero">
+        <h2>Thrift Hauls &amp; Community Feed</h2>
+        <p>Discover outfit inspirations, price breakdowns, and local gems shared by thrifters.</p>
+      </div>
+
+      <div class="filter-pills" id="feed-filter-pills">
+        <button type="button" class="pill active" data-filter="all">All Hauls</button>
+        <button type="button" class="pill" data-filter="near-me">Near Me</button>
+        <button type="button" class="pill" data-filter="trending">Trending</button>
+        <button type="button" class="pill" data-filter="budget">Under ₱200</button>
+      </div>
+
+      <div class="haul-masonry" id="haul-masonry"><!-- populated by JS --></div>
+
+      <p class="no-hauls hidden" id="no-hauls">No hauls match this filter yet — be the first to share one!</p>
+    </main>
+
+    <button type="button" id="add-haul-btn" class="add-haul-btn" title="Share a haul">+</button>
+  </div>
+
+  <!-- ===================== NOTIFICATIONS ===================== -->
+  <div id="notifications-view" class="dash-view hidden">
+    <main class="notif-main-container">
+      <div class="notif-hero">
+        <h2>Notifications</h2>
+        <p>Stay updated on likes, comments and new ukay-ukay spots near you.</p>
+      </div>
+
+      <div class="notif-controls">
+        <div class="filter-pills" id="notif-filter-pills">
+          <button type="button" class="pill active" data-filter="all">All</button>
+
+          <div class="dropdown" id="filter-dropdown">
+            <button type="button" class="pill dropdown-trigger" id="filter-dropdown-btn">
+              Filter by:
+              <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+          <div class="dropdown-menu" id="filter-dropdown-menu">
+            <button type="button" class="dropdown-item" data-filter="comment">Comments</button>
+            <button type="button" class="dropdown-item" data-filter="like">Likes</button>
+            <button type="button" class="dropdown-item" data-filter="spot">New Spots</button>
+          </div>
+        </div>
+      </div>
+
+        <button type="button" id="mark-all-read-btn" class="mark-all-read-btn">Mark all as read</button>
+      </div>
+
+      <div class="notif-list" id="notif-list"><!-- populated by JS --></div>
+
+      <p class="no-notifs hidden" id="no-notifs">Nothing here yet for this filter.</p>
+    </main>
+  </div>
+
+  <!-- ===================== PROFILE ===================== -->
+  <div id="profile-view" class="dash-view hidden">
+    <main class="profile-main-container">
+
+      <div class="profile-card">
+        <div class="profile-card-left">
+          <div class="profile-avatar-wrap">
+            <div class="profile-avatar">R</div>
+            <button type="button" class="avatar-edit-btn" id="avatar-edit-btn" title="Change photo">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </div>
+
+          <div class="profile-info">
+            <h2 id="profile-name" contenteditable="false">Remi Findlay</h2>
+            <p class="profile-handle">
+              <span id="profile-handle" contenteditable="false">@remifinds</span>
+              <span class="dot">&bull;</span>
+              <span id="profile-location" contenteditable="false">Consolacion City</span>
+            </p>
+
+            <p class="profile-bio" id="profile-bio" contenteditable="false">Passionate thrifter hunting for vintage denim.</p>
+            <p class="profile-stats">
+              <strong id="stat-hauls-count">–</strong> Hauls Shared
+              <span class="dot">&bull;</span>
+              <strong id="stat-likes-count">–</strong> Likes
+              <span class="dot">&bull;</span>
+              <strong id="stat-saved-count">–</strong> Saved Spots
+            </p>
+          </div>
+        </div>
+
+        <button type="button" class="edit-profile-btn" id="edit-profile-btn">Edit Profile</button>
+      </div>
+
+      <div class="profile-tabs" id="profile-tabs">
+        <button type="button" class="pill active" data-tab="hauls">My Hauls</button>
+        <button type="button" class="pill" data-tab="spots">My Saved Spots</button>
+        <button type="button" class="pill" data-tab="showcase">My Showcase</button>
+        <button type="button" class="pill" data-tab="drafts">My Drafts</button>
+      </div>
+
+      <div class="profile-masonry" id="profile-masonry"><!-- populated by JS --></div>
+
+      <div class="saved-spots-panel hidden" id="saved-spots-panel">
+        <div class="spots-list-header">
+          <span class="spots-count">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c3aed" stroke="#7c3aed"><path d="M12 21s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 7.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="9" r="3" fill="#fff"/></svg>
+            <span id="saved-spots-count-text">4 Spots Found</span>
+          </span>
+          <div class="sort-by dropdown" id="saved-sort-dropdown">
+            <button type="button" class="pill dropdown-trigger" id="saved-sort-dropdown-btn">
+              Sort by: 
+              <span class="dropdown-trigger-value" id="saved-sort-value-label">Nearby</span>
+              <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+              <div class="dropdown-menu" id="saved-sort-dropdown-menu">
+                <button type="button" class="dropdown-item active" data-value="nearby">Nearby</button>
+                <button type="button" class="dropdown-item" data-value="rating">Top Rated</button>
+              </div>
+            </div>
+          </div>
+        <div class="saved-spots-list" id="saved-spots-list"><!-- populated by JS --></div>
+      </div>
+
+      <!-- ===================== MY SHOWCASE ===================== -->
+      <div class="showcase-panel hidden" id="showcase-panel">
+        <!-- Empty state: shown when the user has no showcase listings yet -->
+        <div class="showcase-empty hidden" id="showcase-empty">
+          <button type="button" class="showcase-add-card" id="showcase-add-card">
+            <span class="showcase-add-title">List your first ukay item</span>
+            <span class="showcase-add-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            <span class="showcase-add-label">Add to showcase</span>
+            <span class="showcase-add-sub">Share your ukay-ukay finds or open your shop showcase</span>
+          </button>
+        </div>
+        <!-- Populated state: masonry grid of showcase listings -->
+        <div class="showcase-masonry hidden" id="showcase-masonry"><!-- populated by JS --></div>
+      </div>
+
+      <div class="drafts-panel hidden" id="drafts-panel">
+        <div class="drafts-list" id="drafts-list"><!-- populated by JS --></div>
+          <p class="no-items hidden" id="no-drafts">No drafts yet. Hit "Save as Draft" while posting and it will show up here.</p>
+      </div>
+
+      <p class="no-items hidden" id="no-items">Nothing here yet.</p>
+
+    </main>
+
+    <button type="button" id="add-item-btn" class="add-item-btn" title="Share a haul">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+
+  <!-- ===================== POST HAUL MODAL ===================== -->
+  <!-- Shared across views (Community Feed's "+" and Profile's "+") — lives
+       outside the 4 .dash-view divs so it's reachable from any of them. -->
+  <div class="modal-overlay" id="post-haul-modal" aria-hidden="true">
+    <div class="post-modal-shell">
+
+      <div class="haul-form-card post-form-card">
+        <div class="haul-form-header">
+          <div>
+            <h2>Share your Ukay Haul</h2>
+            <p>Show off your thrift finds and tag where you found them!</p>
+          </div>
+          <button type="button" class="haul-form-close" id="post-haul-close" aria-label="Close">&times;</button>
+        </div>
+
+        <form id="post-haul-form" novalidate>
+          <div class="haul-form-section">
+            <label for="haul-media-input">Haul Media Upload</label>
+            <label class="haul-dropzone" id="haul-dropzone" for="haul-media-input">
+              <input type="file" id="haul-media-input" accept="image/png,image/jpeg,video/mp4" hidden>
+              <div class="haul-dropzone-body" id="haul-dropzone-body">
+                <div class="haul-dropzone-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                </div>
+                <p class="haul-dropzone-text">Click or drag photos/videos to upload<br><span>(PNG, JPG, MP4)</span></p>
+              </div>
+            </label>
+          </div>
+
+          <div class="haul-form-section">
+            <label for="haul-caption">Caption &amp; Thrift Story</label>
+            <textarea id="haul-caption" rows="3" placeholder="Found this vintage jacket for only ₱150..."></textarea>
+          </div>
+
+          <div class="haul-form-section">
+            <div class="specific-details" id="haul-specific-details">
+              <button type="button" class="specific-details-toggle" id="haul-specific-details-toggle">
+                <span>Specific Details</span>
+                <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="specific-details-panel" id="haul-specific-details-panel">
+                <div class="specific-details-row">
+                  <label>Size</label>
+                  <div class="dropdown" id="haul-size-dropdown">
+                    <button type="button" class="dropdown-trigger form-dropdown-trigger" id="haul-size-dropdown-btn">
+                      <span class="dropdown-trigger-value" id="haul-size-label">Select size</span>
+                      <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="dropdown-menu" id="haul-size-dropdown-menu">
+                      <button type="button" class="dropdown-item" data-value="">Not specified</button>
+                      <button type="button" class="dropdown-item" data-value="XS">XS</button>
+                      <button type="button" class="dropdown-item" data-value="S">S</button>
+                      <button type="button" class="dropdown-item" data-value="M">M</button>
+                      <button type="button" class="dropdown-item" data-value="L">L</button>
+                      <button type="button" class="dropdown-item" data-value="XL">XL</button>
+                      <button type="button" class="dropdown-item" data-value="XXL">XXL</button>
+                      <button type="button" class="dropdown-item" data-value="One Size">One Size</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="specific-details-row">
+                  <label for="haul-color">Color</label>
+                  <input type="text" id="haul-color" placeholder="e.g. Faded olive">
+                </div>
+                <div class="specific-details-row">
+                  <label for="haul-fabric">Fabric</label>
+                  <input type="text" id="haul-fabric" placeholder="e.g. Cotton twill">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="haul-form-row">
+            <div class="haul-form-section">
+              <label for="haul-amount">Total Spent (Optional)</label>
+              <div class="haul-price-input">
+                <span class="currency-prefix">₱</span>
+                <input type="number" id="haul-amount" min="0" step="1" placeholder="0">
+              </div>
+            </div>
+            <div class="haul-form-section">
+              <label>Tag Thrift Spot</label>
+              <div class="dropdown" id="haul-location-dropdown">
+                <button type="button" class="dropdown-trigger form-dropdown-trigger" id="haul-location-dropdown-btn">
+                  <span class="dropdown-trigger-value" id="haul-location-label">Select Location</span>
+                  <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="dropdown-menu dropdown-up" id="haul-location-dropdown-menu"><!-- populated by JS --></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="haul-form-actions">
+            <button type="button" class="btn-haul-secondary" id="haul-save-draft">Save as Draft</button>
+            <button type="submit" class="btn-haul-primary">Post Haul</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="post-preview-card">
+        <span class="post-preview-label">Posting Preview</span>
+        <div class="post-preview-media" id="haul-preview-media">
+        <div class="post-preview-empty">Your photo will appear here</div>
+        <div class="post-preview-location hidden" id="haul-preview-location">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>
+          <span id="haul-preview-location-text"></span>
+        </div>
+        <div class="post-preview-overlay">
+          <span class="post-preview-username" id="haul-preview-username">@username</span>
+          <span class="post-preview-price" id="haul-preview-price"></span>
+          <p class="post-preview-caption" id="haul-preview-caption">Your caption will show up here...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- ===================== POST TO SHOWCASE MODAL ===================== -->
+  <div class="modal-overlay" id="post-showcase-modal" aria-hidden="true">
+    <div class="post-modal-shell">
+
+      <div class="haul-form-card post-form-card">
+        <div class="haul-form-header">
+          <div>
+            <h2>List on Your Showcase</h2>
+            <p>Put your ukay find up for bidding, lock, grab, or mine.</p>
+          </div>
+          <button type="button" class="haul-form-close" id="post-showcase-close" aria-label="Close">&times;</button>
+        </div>
+
+        <form id="post-showcase-form" novalidate>
+          <div class="haul-form-section">
+            <label for="showcase-media-input">Item Media Upload</label>
+            <label class="haul-dropzone" id="showcase-dropzone" for="showcase-media-input">
+              <input type="file" id="showcase-media-input" accept="image/png,image/jpeg" hidden>
+              <div class="haul-dropzone-body" id="showcase-dropzone-body">
+                <div class="haul-dropzone-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                </div>
+                <p class="haul-dropzone-text">Click or drag a photo to upload<br><span>(PNG, JPG)</span></p>
+              </div>
+            </label>
+          </div>
+
+          <div class="haul-form-section">
+            <label for="showcase-item-name">Item Name</label>
+            <input type="text" id="showcase-item-name" placeholder="Vintage Levi's denim jacket">
+          </div>
+
+          <div class="haul-form-section">
+            <label for="showcase-caption">Description</label>
+            <textarea id="showcase-caption" rows="3" placeholder="Barely worn, great condition..."></textarea>
+          </div>
+
+          <div class="haul-form-section">
+            <div class="specific-details">
+              <button type="button" class="specific-details-toggle" id="showcase-specific-details-toggle">
+                <span>Specific Details</span>
+                <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="specific-details-panel" id="showcase-specific-details-panel">
+                <div class="specific-details-row">
+                  <label>Size</label>
+                  <div class="dropdown" id="showcase-size-dropdown">
+                    <button type="button" class="dropdown-trigger form-dropdown-trigger" id="showcase-size-dropdown-btn">
+                      <span class="dropdown-trigger-value" id="showcase-size-label">Select size</span>
+                      <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="dropdown-menu" id="showcase-size-dropdown-menu">
+                      <button type="button" class="dropdown-item" data-value="">Not specified</button>
+                      <button type="button" class="dropdown-item" data-value="XS">XS</button>
+                      <button type="button" class="dropdown-item" data-value="S">S</button>
+                      <button type="button" class="dropdown-item" data-value="M">M</button>
+                      <button type="button" class="dropdown-item" data-value="L">L</button>
+                      <button type="button" class="dropdown-item" data-value="XL">XL</button>
+                      <button type="button" class="dropdown-item" data-value="XXL">XXL</button>
+                      <button type="button" class="dropdown-item" data-value="One Size">One Size</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="specific-details-row">
+                  <label for="showcase-color">Color</label>
+                  <input type="text" id="showcase-color" placeholder="e.g. Faded olive">
+                </div>
+                <div class="specific-details-row">
+                  <label for="showcase-fabric">Fabric</label>
+                  <input type="text" id="showcase-fabric" placeholder="e.g. Cotton twill">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="haul-form-section">
+            <label>Selling Method</label>
+            <div class="selling-method-group" id="selling-method-group">
+              <button type="button" class="method-pill active" data-method="bidding">Bidding</button>
+              <button type="button" class="method-pill" data-method="lock">Lock</button>
+              <button type="button" class="method-pill" data-method="grab">Grab</button>
+              <button type="button" class="method-pill" data-method="mine">Mine</button>
+            </div>
+          </div>
+
+          <div class="method-fields" id="method-fields-bidding">
+            <div class="haul-form-row">
+              <div class="haul-form-section">
+                <label for="bid-start-price">Starting Price</label>
+                <div class="haul-price-input"><span class="currency-prefix">₱</span><input type="number" id="bid-start-price" min="0" step="1" placeholder="150"></div>
+              </div>
+              <div class="haul-form-section">
+                <label for="bid-increment">Bid Increment</label>
+                <div class="haul-price-input"><span class="currency-prefix">₱</span><input type="number" id="bid-increment" min="1" step="1" placeholder="20"></div>
+              </div>
+            </div>
+          </div>
+          <div class="method-fields hidden" id="method-fields-lock">
+            <div class="haul-form-section">
+              <label for="lock-price">Lock Price</label>
+              <div class="haul-price-input"><span class="currency-prefix">₱</span><input type="number" id="lock-price" min="0" step="1" placeholder="200"></div>
+            </div>
+          </div>
+          <div class="method-fields hidden" id="method-fields-grab">
+            <div class="haul-form-section">
+              <label for="grab-price">Grab Price</label>
+              <div class="haul-price-input"><span class="currency-prefix">₱</span><input type="number" id="grab-price" min="0" step="1" placeholder="180"></div>
+            </div>
+          </div>
+          <div class="method-fields hidden" id="method-fields-mine">
+            <div class="haul-form-section">
+              <label for="mine-price">Mine Price</label>
+              <div class="haul-price-input"><span class="currency-prefix">₱</span><input type="number" id="mine-price" min="0" step="1" placeholder="250"></div>
+            </div>
+          </div>
+
+          <p class="method-hint" id="method-hint">Buyers place increasing bids until the highest offer wins.</p>
+
+          <div class="haul-form-section">
+            <label>Tag Thrift Spot</label>
+            <div class="dropdown" id="showcase-location-dropdown">
+              <button type="button" class="dropdown-trigger form-dropdown-trigger" id="showcase-location-dropdown-btn">
+                <span class="dropdown-trigger-value" id="showcase-location-label">Select Location</span>
+                <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="dropdown-menu dropdown-up" id="showcase-location-dropdown-menu"><!-- populated by JS --></div>
+            </div>
+          </div>
+
+          <div class="haul-form-actions">
+            <button type="button" class="btn-haul-secondary" id="showcase-save-draft">Save as Draft</button>
+            <button type="submit" class="btn-haul-primary">Post to Showcase</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="post-preview-card">
+        <span class="post-preview-label">Listing Preview</span>
+        <div class="post-preview-media" id="showcase-preview-media">
+          <div class="post-preview-empty">Your photo will appear here</div>
+          <span class="showcase-method-badge showcase-method-bidding" id="showcase-preview-badge">bidding</span>
+          <div class="post-preview-location align-right hidden" id="showcase-preview-location">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>
+            <span id="showcase-preview-location-text"></span>
+          </div>
+          <div class="post-preview-overlay">
+            <span class="post-preview-username" id="showcase-preview-name">Item name</span>
+            <span class="post-preview-price" id="showcase-preview-price"></span>
+            <p class="post-preview-caption" id="showcase-preview-caption">Your description will show up here...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== SUGGEST A NEW SPOT MODAL ===================== -->
+  <div class="modal-overlay" id="suggest-spot-modal" aria-hidden="true">
+    <div class="post-modal-shell">
+
+      <div class="haul-form-card post-form-card">
+        <div class="haul-form-header">
+          <div>
+            <h2>Suggest a New Spot</h2>
+            <p>Know a hidden ukay-ukay gem? Help other thrifters find it.</p>
+          </div>
+          <button type="button" class="haul-form-close" id="suggest-spot-close" aria-label="Close">&times;</button>
+        </div>
+
+        <form id="suggest-spot-form" novalidate>
+          <div class="haul-form-section">
+            <label for="spot-media-input">Spot Photo (Optional)</label>
+            <label class="haul-dropzone" id="spot-dropzone" for="spot-media-input">
+              <input type="file" id="spot-media-input" accept="image/png,image/jpeg" hidden>
+              <div class="haul-dropzone-body" id="spot-dropzone-body">
+                <div class="haul-dropzone-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                </div>
+                <p class="haul-dropzone-text">Click or drag a photo to upload<br><span>(PNG, JPG)</span></p>
+              </div>
+            </label>
+          </div>
+
+          <div class="haul-form-section">
+            <label for="spot-name">Spot Name</label>
+            <input type="text" id="spot-name" placeholder="e.g. Aling Nena's Ukay Corner">
+          </div>
+
+          <div class="haul-form-section">
+            <label for="spot-address">Address / Area</label>
+            <div class="address-row">
+              <input type="text" id="spot-address" placeholder="e.g. Near Robinsons, Consolacion">
+              <button type="button" class="btn-haul-secondary address-find-btn" id="spot-find-btn">Find on map</button>
+            </div>
+          </div>
+
+          <div class="haul-form-row">
+            <div class="haul-form-section">
+              <label for="spot-hours">Hours (Optional)</label>
+              <input type="text" id="spot-hours" placeholder="e.g. Open until 7 PM">
+            </div>
+            <div class="haul-form-section">
+              <label for="spot-price-range">Price Range</label>
+              <input type="text" id="spot-price-range" placeholder="e.g. ₱50–₱200 Bins">
+            </div>
+          </div>
+
+          <div class="haul-form-actions">
+            <button type="button" class="btn-haul-secondary" id="suggest-spot-cancel">Cancel</button>
+            <button type="submit" class="btn-haul-primary">Submit Spot</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="post-preview-card spot-map-card">
+        <span class="post-preview-label">Pin the Location</span>
+        <div class="spot-map-wrap">
+          <div id="spot-picker-map"></div>
+          <div class="spot-map-hint" id="spot-map-hint">Click the map to drop a pin</div>
+          <button type="button" id="spot-locate-btn" class="locate-btn" title="Use my location">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== RATE THIS SPOT MODAL ===================== -->
+  <div class="modal-overlay" id="rate-spot-modal" aria-hidden="true">
+    <div class="haul-form-card rate-spot-card">
+      <div class="haul-form-header">
+        <div>
+          <h2>Rate This Spot</h2>
+          <p id="rate-spot-name">Ukay-Ukay ni Aa</p>
+        </div>
+        <button type="button" class="haul-form-close" id="rate-spot-close" aria-label="Close">&times;</button>
+      </div>
+
+      <form id="rate-spot-form" novalidate>
+        <div class="haul-form-section">
+          <label>Your Rating</label>
+          <div class="star-picker" id="star-picker">
+            <button type="button" class="star-btn" data-star="1" aria-label="1 star">★</button>
+            <button type="button" class="star-btn" data-star="2" aria-label="2 stars">★</button>
+            <button type="button" class="star-btn" data-star="3" aria-label="3 stars">★</button>
+            <button type="button" class="star-btn" data-star="4" aria-label="4 stars">★</button>
+            <button type="button" class="star-btn" data-star="5" aria-label="5 stars">★</button>
+          </div>
+        </div>
+
+        <div class="haul-form-section">
+          <label for="rate-comment">Your Review (Optional)</label>
+          <textarea id="rate-comment" rows="3" placeholder="What did you think of this spot?"></textarea>
+        </div>
+
+        <div class="haul-form-section">
+          <label>Post As</label>
+          <div class="rating-visibility">
+            <label class="visibility-option"><input type="radio" name="rating-visibility" value="username" checked> <span>@remifinds</span></label>
+            <label class="visibility-option"><input type="radio" name="rating-visibility" value="anonymous"> <span>Anonymous Thrifter</span></label>
+          </div>
+        </div>
+
+        <div class="haul-form-actions">
+          <button type="button" class="btn-haul-secondary" id="rate-spot-cancel">Cancel</button>
+          <button type="submit" class="btn-haul-primary">Submit Rating</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="scripts.js"></script>
+</body>
+</html>

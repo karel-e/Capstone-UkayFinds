@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/PENPOT LAYOUTS/css/user-profile.css">
+<title>UkayFinds - My Profile</title>
+</head>
+<body>
+
+<section id="profile-view">
+  <!-- HEADER — same structure/classes as the other dashboard pages -->
+  <header class="app-header">
+    <div class="brand-logo">UkayFinds</div>
+
+    <nav class="app-nav">
+      <a href="find-a-store.html" class="nav-link">Find A Store</a>
+      <a href="community-feed.html" class="nav-link">Community Feed</a>
+      <a href="notifications.html" class="nav-link">Notifications</a>
+    </nav>
+
+    <div class="user-menu-container">
+      <button id="user-avatar-btn" class="avatar-btn" aria-haspopup="true" aria-expanded="false">R</button>
+      <div id="user-dropdown" class="user-dropdown">
+        <div class="dropdown-header">
+          <div class="dropdown-avatar">R</div>
+          <div>
+            <strong id="dropdown-name">Remi Findlay</strong>
+            <small id="dropdown-email">remifinds@gmail.com</small>
+          </div>
+        </div>
+        <hr>
+        <ul class="dropdown-links">
+          <li><a href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved Spots</a></li>
+          <li><a href="user-profile.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 8h8M8 16h5"/></svg> My Shared Hauls</a></li>
+          <li><a href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg> Account Settings</a></li>
+        </ul>
+        <hr>
+        <a href="index.html" class="logout-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          Log Out
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="profile-main-container">
+
+    <!-- PROFILE CARD -->
+    <div class="profile-card">
+      <div class="profile-card-left">
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar">R</div>
+          <button type="button" class="avatar-edit-btn" id="avatar-edit-btn" title="Change photo">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+
+        <div class="profile-info">
+          <h2 id="profile-name" contenteditable="false">Remi Findlay</h2>
+          <p class="profile-handle">
+            <span id="profile-handle" contenteditable="false">@remifinds</span>
+            <span class="dot">&bull;</span>
+            <span id="profile-location" contenteditable="false">Consolacion City</span>
+          </p>
+          <p class="profile-bio" id="profile-bio" contenteditable="false">Passionate thrifter hunting for vintage denim.</p>
+          <p class="profile-stats">
+            <strong>24</strong> Hauls Shared
+            <span class="dot">&bull;</span>
+            <strong>1.2k</strong> Likes
+            <span class="dot">&bull;</span>
+            <strong>18</strong> Saved Spots
+          </p>
+        </div>
+      </div>
+
+      <button type="button" class="edit-profile-btn" id="edit-profile-btn">Edit Profile</button>
+    </div>
+
+    <!-- TABS -->
+    <div class="profile-tabs" id="profile-tabs">
+      <button type="button" class="pill active" data-tab="hauls">My Hauls</button>
+      <button type="button" class="pill" data-tab="spots">Saved Spots</button>
+    </div>
+
+    <!-- CONTENT: MY HAULS (masonry) -->
+    <div class="profile-masonry" id="profile-masonry"><!-- populated by JS --></div>
+
+    <!-- CONTENT: SAVED SPOTS (list) -->
+    <div class="saved-spots-panel hidden" id="saved-spots-panel">
+      <div class="spots-list-header">
+        <span class="spots-count">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c3aed" stroke="#7c3aed"><path d="M12 21s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 7.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="9" r="3" fill="#fff"/></svg>
+          <span id="saved-spots-count-text">4 Spots Found</span>
+        </span>
+        <div class="sort-by">
+          Sort by:
+          <select id="saved-sort-select">
+            <option value="nearby">Nearby</option>
+            <option value="rating">Top Rated</option>
+          </select>
+        </div>
+      </div>
+      <div class="saved-spots-list" id="saved-spots-list"><!-- populated by JS --></div>
+    </div>
+
+    <p class="no-items hidden" id="no-items">Nothing here yet.</p>
+
+  </main>
+
+  <button type="button" id="add-item-btn" class="add-item-btn" title="Share a haul">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+</section>
+
+<script src="/PENPOT LAYOUTS/js/user-profile.js"></script>
+</body>
+</html>
