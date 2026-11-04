@@ -12,7 +12,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 if (empty($_SESSION['user_id'])) {
-    json_response(['success' => false, 'error' => 'Not logged in.']);
+    json_error('Not logged in.', 401);
     exit;
 }
 $userId = (int) $_SESSION['user_id'];

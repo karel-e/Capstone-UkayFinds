@@ -17,14 +17,18 @@ if (!is_array($input)) {
     json_error('Invalid request body — expected JSON.');
 }
 
-$username        = trim($input['username'] ?? '');
-$email           = trim($input['email'] ?? '');
+$username        = $input['username'] ?? '';
+$email           = $input['email'] ?? '';
 $password        = $input['password'] ?? '';
 $confirmPassword = $input['confirm_password'] ?? '';
 
-// ---- Validation (mirrors the checks your signup modal already does
-// client-side — but the server-side copy is the one that actually
-// matters, since anyone can bypass the JS and call this URL directly) ----
+if (!is_string($username) || !is_string($email) || !is_string($password) || !is_string($confirmPassword)) {
+    json_error('Invalid request body.');
+}
+$username = trim($username);
+$email    = trim($email);
+
+// ---- Validation ----
 if ($username === '' || $email === '' || $password === '' || $confirmPassword === '') {
     json_error('All fields are required.');
 }
@@ -40,8 +44,13 @@ if (!preg_match('/[a-zA-Z]/', $username)) {
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     json_error('Enter a valid email address.');
 }
-if (strlen($password) < 6) {
-    json_error('Password must be at least 6 characters.');
+// strlen() counts bytes, which is what bcrypt cares about: it silently
+// ignores everything past 72 bytes.
+if (strlen($password) < 8) {
+    json_error('Password must be at least 8 characters.');
+}
+if (strlen($password) > 72) {
+    json_error('Password must be 72 characters or fewer.');
 }
 if ($password !== $confirmPassword) {
     json_error('Passwords do not match.');
@@ -55,25 +64,31 @@ if ($stmt->fetch()) {
 }
 
 // ---- Create the account ----
-// Deliberately NOT logging the account in here — registering only creates
-// it. The user still has to prove they know the password by going through
-// Sign In separately, same as almost every real signup flow works.
 $passwordHash = password_hash($password, PASSWORD_BCRYPT);
-$displayName  = $username; // they can change this later via Edit Profile
+$displayName  = $username;
 
-$stmt = $pdo->prepare(
-    'INSERT INTO users (username, email, password_hash, display_name) VALUES (?, ?, ?, ?)'
-);
-$stmt->execute([$username, $email, $passwordHash, $displayName]);
+try {
+    $stmt = $pdo->prepare(
+        'INSERT INTO users (username, email, password_hash, display_name) VALUES (?, ?, ?, ?)'
+    );
+    $stmt->execute([$username, $email, $passwordHash, $displayName]);
+} catch (PDOException $e) {
+    if ($e->getCode() === '23000') {
+        json_error('That username or email is already taken.', 409);
+    }
+    throw $e;
+}
 $userId = (int) $pdo->lastInsertId();
 
-// Welcome notification — actor_id is NULL because this comes from the
-// system itself, not another user. Failure here shouldn't block registration,
-// so it isn't wrapped in the same validation/error flow as the checks above.
-$stmt = $pdo->prepare(
-    'INSERT INTO notifications (recipient_id, actor_id, type, message) VALUES (?, NULL, ?, ?)'
-);
-$stmt->execute([$userId, 'system', 'Welcome to UkayFinds! Start exploring local thrift spots near you.']);
+// Welcome notification: nice to have, never worth failing a signup over.
+try {
+    $stmt = $pdo->prepare(
+        'INSERT INTO notifications (recipient_id, actor_id, type, message) VALUES (?, NULL, ?, ?)'
+    );
+    $stmt->execute([$userId, 'system', 'Welcome to UkayFinds! Start exploring local thrift spots near you.']);
+} catch (PDOException $e) {
+    error_log('register.php welcome notification failed: ' . $e->getMessage());
+}
 
 json_response([
     'message' => 'Account created. Please sign in.',

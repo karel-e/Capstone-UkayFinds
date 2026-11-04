@@ -9,7 +9,7 @@
 require_once __DIR__ . '/../config.php'; // config.php already starts the session
 
 if (empty($_SESSION['user_id'])) {
-    json_response(['success' => false, 'error' => 'Not logged in.']);
+    json_error('Not logged in.', 401);
 }
 $userId = (int) $_SESSION['user_id'];
 

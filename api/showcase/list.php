@@ -9,24 +9,28 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 if (empty($_SESSION['user_id'])) {
-    json_response(['success' => false, 'error' => 'Not logged in.']);
+    json_error('Not logged in.', 401);
     exit;
 }
 $userId = (int) $_SESSION['user_id'];
 
 $stmt = $pdo->prepare("
-    SELECT id, item_name, description, image_path, selling_method,
-           bid_start_price, bid_increment, lock_price, grab_price, mine_price,
-           status, created_at
-    FROM showcase_listings
-    WHERE user_id = ? AND status != 'draft'
-    ORDER BY created_at DESC
+    SELECT sl.id, sl.item_name, sl.description, sl.image_path, sl.selling_method,
+           sl.bid_start_price, sl.bid_increment, sl.lock_price, sl.grab_price, sl.mine_price,
+           sl.size, sl.color, sl.fabric, sl.store_id,
+           sl.status, sl.created_at,
+           s.name AS store_name
+    FROM showcase_listings sl
+    LEFT JOIN stores s ON s.id = sl.store_id
+    WHERE sl.user_id = ? AND sl.status != 'draft'
+    ORDER BY sl.created_at DESC
 ");
 $stmt->execute([$userId]);
 $listings = $stmt->fetchAll();
 
 foreach ($listings as &$item) {
     $item['id'] = (int) $item['id'];
+    $item['store_id'] = $item['store_id'] !== null ? (int) $item['store_id'] : null;
     foreach (['bid_start_price', 'bid_increment', 'lock_price', 'grab_price', 'mine_price'] as $priceField) {
         $item[$priceField] = $item[$priceField] !== null ? (float) $item[$priceField] : null;
     }

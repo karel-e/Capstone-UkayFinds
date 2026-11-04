@@ -2,7 +2,7 @@
 /**
  * POST /api/hauls/create.php
  * multipart/form-data:
- *   item_name, price?, store_name?, tags[]?, image? (file)
+ *   item_name, price?, store_id?, size?, color?, fabric?, tags[]?, image? (file)
  *   status?   'draft' | 'published' (default 'published')
  *   draft_id? if set, updates that existing draft instead of inserting a new row
  */
@@ -15,14 +15,29 @@ if (empty($_SESSION['user_id'])) {
     json_error('You must be logged in to post a haul.', 401);
 }
 $userId = (int) $_SESSION['user_id'];
+// A file bigger than PHP's post_max_size arrives with $_POST and $_FILES both empty
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && empty($_FILES)
+    && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    json_error('That upload is too large.', 413);
+}
 
+$size      = trim($_POST['size'] ?? '');
+$color     = trim($_POST['color'] ?? '');
+$fabric    = trim($_POST['fabric'] ?? '');
 $isDraft   = ($_POST['status'] ?? '') === 'draft';
 $draftId   = isset($_POST['draft_id']) ? (int) $_POST['draft_id'] : 0;
 $itemName  = trim($_POST['item_name'] ?? '');
 $price     = isset($_POST['price']) && $_POST['price'] !== '' ? (float) $_POST['price'] : null;
-$storeName = trim($_POST['store_name'] ?? '');
+$storeIdRaw = trim((string) ($_POST['store_id'] ?? ''));
 $tags      = isset($_POST['tags']) ? (array) $_POST['tags'] : ['near-me'];
-$hasUpload = !empty($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK;
+$uploadError = $_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE;
+if ($uploadError !== UPLOAD_ERR_OK && $uploadError !== UPLOAD_ERR_NO_FILE) {
+    $msg = in_array($uploadError, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
+        ? 'Image must be under 5MB.'
+        : 'The image could not be uploaded. Please try again.';
+    json_error($msg, 400);
+}
+$hasUpload = ($uploadError === UPLOAD_ERR_OK);
 
 // Continuing a draft? Make sure it's really this user's draft.
 $existing = null;
@@ -35,9 +50,22 @@ if ($draftId > 0) {
     }
 }
 
-if (mb_strlen($itemName) > 150) {
-    json_error('Caption must be 150 characters or fewer.');
+if (mb_strlen($itemName) > 500) {
+    json_error('Caption must be 500 characters or fewer.');
 }
+if ($size !== '' && !in_array($size, ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'One Size'], true)) {
+    json_error('Pick a valid size.');
+}
+if (mb_strlen($color) > 40) {
+    json_error('Color must be 40 characters or fewer.');
+}
+if (mb_strlen($fabric) > 60) {
+    json_error('Fabric must be 60 characters or fewer.');
+}
+// Empty means "not specified": store NULL, not '' (an ENUM would store '' as an invalid blank)
+$sizeValue   = $size   !== '' ? $size   : null;
+$colorValue  = $color  !== '' ? $color  : null;
+$fabricValue = $fabric !== '' ? $fabric : null;
 
 $hasImage = $hasUpload || ($existing && $existing['image_path']);
 if ($isDraft) {
@@ -48,12 +76,18 @@ if ($isDraft) {
     json_error('Add a caption for your haul.');
 }
 
+// Tagged thrift spot: sent by id, so two spots with the same name can't be mixed up
 $storeId = null;
-if ($storeName !== '') {
-    $stmt = $pdo->prepare('SELECT id FROM stores WHERE name = ? LIMIT 1');
-    $stmt->execute([$storeName]);
-    $store = $stmt->fetch();
-    if ($store) $storeId = (int) $store['id'];
+if ($storeIdRaw !== '') {
+    if (!ctype_digit($storeIdRaw)) {
+        json_error('Pick a valid thrift spot.');
+    }
+    $stmt = $pdo->prepare('SELECT id FROM stores WHERE id = ?');
+    $stmt->execute([(int) $storeIdRaw]);
+    if (!$stmt->fetch()) {
+        json_error('That thrift spot no longer exists. Pick another one.');
+    }
+    $storeId = (int) $storeIdRaw;
 }
 
 // ---- Image upload (optional) ----
@@ -70,6 +104,10 @@ if ($hasUpload) {
     }
 
     $uploadDir = __DIR__ . '/../../uploads/hauls/';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+        error_log('create.php: cannot create ' . $uploadDir);
+        json_error('Could not save the image.', 500);
+    }
     $filename = 'haul_' . $userId . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $allowedTypes[$mimeType];
 
     if (move_uploaded_file($_FILES['image']['tmp_name'], $uploadDir . $filename)) {
@@ -78,6 +116,9 @@ if ($hasUpload) {
             @unlink(__DIR__ . '/../../' . $existing['image_path']);
         }
         $imagePath = 'uploads/hauls/' . $filename;
+    } else {
+        error_log('create.php: move_uploaded_file failed for ' . $uploadDir . $filename);
+        json_error('Could not save the image.', 500);
     }
 }
 
@@ -86,16 +127,20 @@ $status = $isDraft ? 'draft' : 'published';
 if ($existing) {
     // created_at refreshed so a draft published today shows up as new in the feed
     $stmt = $pdo->prepare(
-        'UPDATE hauls SET store_id = ?, item_name = ?, price = ?, image_path = ?, status = ?, created_at = NOW()
+        'UPDATE hauls SET store_id = ?, item_name = ?, price = ?, size = ?, color = ?, fabric = ?,
+                image_path = ?, status = ?, created_at = NOW()
          WHERE id = ? AND user_id = ?'
     );
-    $stmt->execute([$storeId, $itemName, $price, $imagePath, $status, $draftId, $userId]);
+    $stmt->execute([$storeId, $itemName, $price, $sizeValue, $colorValue, $fabricValue,
+                    $imagePath, $status, $draftId, $userId]);
     $haulId = $draftId;
 } else {
     $stmt = $pdo->prepare(
-        'INSERT INTO hauls (user_id, store_id, item_name, price, image_path, status) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO hauls (user_id, store_id, item_name, price, size, color, fabric, image_path, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
-    $stmt->execute([$userId, $storeId, $itemName, $price, $imagePath, $status]);
+    $stmt->execute([$userId, $storeId, $itemName, $price, $sizeValue, $colorValue, $fabricValue,
+                    $imagePath, $status]);
     $haulId = (int) $pdo->lastInsertId();
 }
 

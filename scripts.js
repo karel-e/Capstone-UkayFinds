@@ -135,21 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
      ========================================================================== */
   let currentUser = null; // set once login/register/session-check succeeds; used by Profile page
 
-  let feedHauls = [
-    { id: 1,  user: "@fitbymitz",       item: "Overall outfit check", price: "₱180", height: 260, tags: ["near-me", "trending"] },
-    { id: 2,  user: "@fitme",           item: "Knitted jacket",       price: "₱150", height: 380, tags: ["trending"] },
-    { id: 3,  user: "@outfitoftheday",  item: "Denim overall fit",    price: "₱100", height: 460, tags: ["budget"] },
-    { id: 4,  user: "@thriftbyjade",    item: "Corduroy jacket",      price: "₱220", height: 280, tags: ["near-me"] },
-    { id: 5,  user: "@rack.raider",     item: "Vintage sundress",     price: "₱190", height: 260, tags: ["budget", "near-me"] },
-    { id: 6,  user: "@ukayqueen",       item: "Streetwear layers",    price: "₱260", height: 460, tags: ["trending"] },
-    { id: 7,  user: "@secondstoryco",   item: "Curated blazer set",   price: "₱340", height: 300, tags: ["trending"] },
-    { id: 8,  user: "@budgetfits",      item: "Bin-find graphic tee", price: "₱90",  height: 220, tags: ["budget"] },
-    { id: 9,  user: "@preloved.ph",     item: "Cargo pants combo",    price: "₱180", height: 260, tags: ["budget", "near-me"] },
-    { id: 10, user: "@vintagevault",    item: "Leather jacket find",  price: "₱450", height: 300, tags: ["trending"] },
-    { id: 11, user: "@sundaymarket",    item: "Floral wrap top",      price: "₱120", height: 250, tags: ["budget"] }
-  ];
-  let nextHaulId = 100; // seed data uses 1-11, new posts start well above that
-
   /* ==========================================================================
      1. LANDING PREVIEW MAP (logged-out) — always initialized, landing is
         visible on first load.
@@ -184,15 +169,366 @@ document.addEventListener('DOMContentLoaded', () => {
   const landingView = document.getElementById('landing-view');
   const dashboardShell = document.getElementById('dashboard-shell');
 
+  // Opens Google Maps directions in a new tab. Uses coordinates when we have
+  // them, otherwise falls back to a search by name + address.
+  function openDirections(place) {
+    const lat = Number(place.latitude), lng = Number(place.longitude);
+    const hasCoords = place.latitude != null && place.longitude != null && isFinite(lat) && isFinite(lng);
+    const url = hasCoords
+      ? 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(lat + ',' + lng)
+      : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([place.name, place.address].filter(Boolean).join(' '));
+    window.open(url, '_blank', 'noopener');
+  }
+
+  // The visitor's position, shared by every view (Feed "Near Me", Saved Spots
+  // "Nearby"). askIfNeeded=false never triggers a browser permission prompt: it
+  // only returns coordinates when we already have them or access was already
+  // granted. Resolves to {lat, lng} or null.
+  /* ---- Haul detail window (5.2): opened from feed cards and My Hauls ---- */
+  const haulDetailModal = document.getElementById('haul-detail-modal');
+  const haulDetailBody = document.getElementById('haul-detail-body');
+
+  function closeHaulDetail() { setModalOpen(haulDetailModal, false); }
+  document.getElementById('haul-detail-close').addEventListener('click', closeHaulDetail);
+  haulDetailModal.addEventListener('click', (e) => { if (e.target === haulDetailModal) closeHaulDetail(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && haulDetailModal.classList.contains('active')) closeHaulDetail();
+  });
+
+  function formatHaulDate(dateString) {
+    const d = new Date(String(dateString).replace(' ', 'T'));
+    return isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  // Like / unlike, shared by the feed cards and the detail window.
+  // Returns {liked, like_count} or null if it failed.
+  async function toggleHaulLike(haulId) {
+    try {
+      const res = await apiFetch('api/hauls/like.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ haul_id: haulId })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast(data.error || 'Could not save your like.', 'error'); return null; }
+      return { liked: data.liked, like_count: data.like_count };
+    } catch (err) {
+      showToast('Could not reach the server. Try again.', 'error');
+      return null;
+    }
+  }
+
+  function likeLabel(count) {
+    return count + ' like' + (count === 1 ? '' : 's');
+  }
+
+  /* ---- 5.5: three-dot menu on feed cards ---- */
+  let savedHaulIds = new Set();
+  async function loadSavedHaulIds() {
+    try {
+      const res = await apiFetch('api/saved-hauls/ids.php');
+      const data = await res.json();
+      if (data.success) savedHaulIds = new Set((data.ids || []).map(Number));
+    } catch (err) { /* menu just shows "Save item" */ }
+  }
+
+  async function toggleSavedHaul(haulId) {
+    try {
+      const res = await apiFetch('api/saved-hauls/toggle.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ haul_id: haulId })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast(data.error || 'Could not update your saved items.', 'error'); return null; }
+      if (data.saved) savedHaulIds.add(Number(haulId)); else savedHaulIds.delete(Number(haulId));
+      if (views['profile'].inited && views['profile'].refreshSavedHauls) views['profile'].refreshSavedHauls();
+      return data.saved;
+    } catch (err) {
+      showToast('Could not reach the server. Try again.', 'error');
+      return null;
+    }
+  }
+
+  async function shareHaul(haulId) {
+    const url = location.origin + location.pathname + '#haul-' + haulId;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'UkayFinds haul', url }); return; }
+      catch (err) { if (err && err.name === 'AbortError') return; }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Link copied.');
+    } catch (err) {
+      window.prompt('Copy this link:', url);
+    }
+  }
+
+  async function deleteHaulById(id) {
+    if (!confirm('Delete this haul? This can\'t be undone.')) return;
+    try {
+      const res = await apiFetch('api/hauls/delete.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast(data.error || 'Could not delete that haul.', 'error'); return; }
+      showToast('Haul deleted.');
+      if (views['community-feed'].inited && views['community-feed'].refreshHauls) views['community-feed'].refreshHauls();
+      if (views['profile'].inited) {
+        if (views['profile'].refreshHauls) views['profile'].refreshHauls();
+        if (views['profile'].refreshStats) views['profile'].refreshStats();
+        if (views['profile'].refreshSavedHauls) views['profile'].refreshSavedHauls();
+      }
+    } catch (err) {
+      showToast('Could not reach the server. Try again.', 'error');
+    }
+  }
+
+  // The Edit/Delete buttons are only a convenience: the server re-checks
+  // ownership in update.php and delete.php.
+  function buildHaulMenu(h) {
+    const mine = !!currentUser && h.username === currentUser.username;
+    const wrap = document.createElement('div');
+    wrap.className = 'haul-menu';
+    wrap.innerHTML = `
+      <button type="button" class="haul-menu-btn" aria-label="More options" aria-haspopup="true" aria-expanded="false">&#8942;</button>
+      <div class="haul-menu-list" role="menu">
+        <button type="button" role="menuitem" data-action="share">Share</button>
+        <button type="button" role="menuitem" data-action="save">${savedHaulIds.has(Number(h.id)) ? 'Unsave item' : 'Save item'}</button>
+        ${mine ? '<button type="button" role="menuitem" data-action="edit">Edit</button><button type="button" role="menuitem" data-action="delete" class="danger">Delete</button>' : ''}
+      </div>`;
+    const btn = wrap.querySelector('.haul-menu-btn');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const opening = !wrap.classList.contains('open');
+      document.querySelectorAll('.haul-menu.open').forEach(m => m.classList.remove('open'));
+      wrap.classList.toggle('open', opening);
+      btn.setAttribute('aria-expanded', opening ? 'true' : 'false');
+    });
+    wrap.querySelector('.haul-menu-list').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const item = e.target.closest('button[data-action]');
+      if (!item) return;
+      wrap.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+      const action = item.dataset.action;
+      if (action === 'share') shareHaul(h.id);
+      else if (action === 'save') {
+        const saved = await toggleSavedHaul(h.id);
+        if (saved !== null) {
+          item.textContent = saved ? 'Unsave item' : 'Save item';
+          showToast(saved ? 'Saved to your items.' : 'Removed from saved items.');
+        }
+      }
+      else if (action === 'edit') openHaulEdit(h);
+      else if (action === 'delete') deleteHaulById(h.id);
+    });
+    return wrap;
+  }
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.haul-menu.open').forEach(m => m.classList.remove('open'));
+  });
+
+  // landing.html#haul-12 opens that haul once you're signed in
+  function openHaulFromHash() {
+    const m = /^#haul-(\d+)$/.exec(location.hash);
+    if (m) openHaulDetail(Number(m[1]));
+  }
+
+  // ---- Comments inside the detail window (5.4) ----
+  function commentHtml(c) {
+    return `<div class="haul-comment" data-id="${c.id}">
+        <p><button type="button" class="user-link" data-username="${escapeHtml(c.username)}">@${escapeHtml(c.username)}</button> <span>${escapeHtml(formatTimeAgo(c.created_at))}</span></p>
+        <p class="haul-comment-body">${escapeHtml(c.body)}</p>
+        ${c.is_mine ? '<button type="button" class="haul-comment-delete" aria-label="Delete your comment">Delete</button>' : ''}
+      </div>`;
+  }
+
+  async function setupHaulComments(haulId) {
+    const section = haulDetailBody.querySelector('.haul-comments');
+    const listEl = section.querySelector('.haul-comments-list');
+    const titleEl = section.querySelector('.haul-comments-title');
+    const form = section.querySelector('.haul-comment-form');
+    const input = form.querySelector('input');
+    let comments = [];
+
+    function render() {
+      titleEl.textContent = comments.length ? `Comments (${comments.length})` : 'Comments';
+      listEl.innerHTML = comments.length
+        ? comments.map(commentHtml).join('')
+        : '<p class="haul-comments-empty">No comments yet. Be the first!</p>';
+    }
+
+    try {
+      const res = await apiFetch('api/comments/list.php?haul_id=' + encodeURIComponent(haulId));
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Could not load comments.');
+      comments = data.comments || [];
+      render();
+    } catch (err) {
+      listEl.innerHTML = `<p class="haul-comments-empty">${escapeHtml(err.message)}</p>`;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = input.value.trim();
+      if (!body) return;
+      const btn = form.querySelector('button');
+      btn.disabled = true;
+      try {
+        const res = await apiFetch('api/comments/create.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ haul_id: haulId, body })
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Could not post your comment.', 'error'); return; }
+        comments.push(data.comment);
+        input.value = '';
+        render();
+        listEl.scrollTop = listEl.scrollHeight;
+      } catch (err) {
+        showToast('Could not reach the server. Try again.', 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    listEl.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.haul-comment-delete');
+      if (!btn) return;
+      const id = Number(btn.closest('.haul-comment').dataset.id);
+      if (!confirm('Delete your comment?')) return;
+      try {
+        const res = await apiFetch('api/comments/delete.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Could not delete your comment.', 'error'); return; }
+        comments = comments.filter(c => c.id !== id);
+        render();
+      } catch (err) {
+        showToast('Could not reach the server. Try again.', 'error');
+      }
+    });
+  }
+
+  async function openHaulDetail(haulId) {
+    haulDetailBody.innerHTML = '<p class="no-results haul-detail-loading">Loading…</p>';
+    setModalOpen(haulDetailModal, true);
+    try {
+      const res = await apiFetch('api/hauls/get.php?id=' + encodeURIComponent(haulId));
+      const data = await res.json();
+      if (!data.success) {
+        haulDetailBody.innerHTML = `<p class="no-results haul-detail-loading">${escapeHtml(data.error || 'Could not load this haul.')}</p>`;
+        return;
+      }
+      const h = data.haul;
+      const media = h.image_path
+        ? `<img src="${escapeHtml(h.image_path)}" alt="${escapeHtml(h.item_name)}">`
+        : '<div class="haul-detail-noimg">No photo</div>';
+      const rows = [['Size', h.size], ['Color', h.color], ['Fabric', h.fabric]]
+        .filter(r => r[1])
+        .map(r => `<div class="haul-detail-row"><span>${r[0]}</span><strong>${escapeHtml(r[1])}</strong></div>`)
+        .join('');
+      const spot = h.store_id
+        ? `<button type="button" class="haul-detail-spot" data-store-id="${h.store_id}" data-store-name="${escapeHtml(h.store_name || '')}">
+             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>
+             ${escapeHtml(h.store_name || 'View spot')} &rarr;</button>`
+        : '';
+      haulDetailBody.innerHTML = `
+        <div class="haul-detail-media">${media}</div>
+        <div class="haul-detail-info">
+          <p class="haul-detail-user"><button type="button" class="user-link" data-username="${escapeHtml(h.username)}">@${escapeHtml(h.username)}</button> <span>&middot; ${escapeHtml(formatHaulDate(h.created_at))}</span></p>
+          <p class="haul-detail-caption">${escapeHtml(h.item_name)}</p>
+          <p class="haul-detail-price">${h.price !== null ? '₱' + h.price.toFixed(0) : 'Price not shared'}</p>
+          ${rows ? `<div class="haul-detail-rows">${rows}</div>` : ''}
+          ${spot}
+          <button type="button" class="haul-detail-like${h.liked_by_me ? ' liked' : ''}" aria-pressed="${h.liked_by_me ? 'true' : 'false'}">
+            <span class="heart">${h.liked_by_me ? '&#9829;' : '&#9825;'}</span> <span class="count">${likeLabel(h.like_count)}</span>
+          </button>
+          <div class="haul-comments">
+            <h4 class="haul-comments-title">Comments</h4>
+            <div class="haul-comments-list"><p class="haul-comments-empty">Loading comments…</p></div>
+            <form class="haul-comment-form" novalidate>
+              <input type="text" maxlength="300" placeholder="Add a comment…" aria-label="Add a comment">
+              <button type="submit">Post</button>
+            </form>
+          </div>
+        </div>`;
+      setupHaulComments(h.id);
+      const likeBtn = haulDetailBody.querySelector('.haul-detail-like');
+      likeBtn.addEventListener('click', async () => {
+        likeBtn.disabled = true;
+        const result = await toggleHaulLike(h.id);
+        likeBtn.disabled = false;
+        if (!result) return;
+        h.liked_by_me = result.liked;
+        h.like_count = result.like_count;
+        likeBtn.classList.toggle('liked', result.liked);
+        likeBtn.setAttribute('aria-pressed', result.liked ? 'true' : 'false');
+        likeBtn.querySelector('.heart').innerHTML = result.liked ? '&#9829;' : '&#9825;';
+        likeBtn.querySelector('.count').textContent = likeLabel(result.like_count);
+        // keep the feed behind the window in step
+        if (views['community-feed'].inited && views['community-feed'].refreshHauls) views['community-feed'].refreshHauls();
+      });
+      const spotBtn = haulDetailBody.querySelector('.haul-detail-spot');
+      if (spotBtn) {
+        spotBtn.addEventListener('click', () => {
+          closeHaulDetail();
+          switchView('find-a-store');
+          const finder = views['find-a-store'];
+          if (finder.showStore) finder.showStore(spotBtn.dataset.storeId, spotBtn.dataset.storeName);
+        });
+      }
+    } catch (err) {
+      haulDetailBody.innerHTML = '<p class="no-results haul-detail-loading">Could not reach the server. Try again.</p>';
+    }
+  }
+
+  let sharedCoords = null;
+  function getUserCoords(askIfNeeded) {
+    if (sharedCoords) return Promise.resolve(sharedCoords);
+    if (!navigator.geolocation) return Promise.resolve(null);
+    const locate = () => new Promise(resolve => {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          sharedCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          resolve(sharedCoords);
+        },
+        () => resolve(null),
+        { timeout: 8000, maximumAge: 60000 }
+      );
+    });
+    if (askIfNeeded || !navigator.permissions || !navigator.permissions.query) {
+      return askIfNeeded ? locate() : Promise.resolve(null);
+    }
+    return navigator.permissions.query({ name: 'geolocation' })
+      .then(p => (p.state === 'granted' ? locate() : null))
+      .catch(() => null);
+  }
+
   const views = {
     'find-a-store':   { el: document.getElementById('find-a-store-view'),   init: initFindAStore,   inited: false, onShow: null },
     'community-feed': { el: document.getElementById('community-feed-view'), init: initCommunityFeed, inited: false, onShow: null },
     'notifications':  { el: document.getElementById('notifications-view'),  init: initNotifications, inited: false, onShow: null },
-    'profile':        { el: document.getElementById('profile-view'),        init: initProfile,       inited: false, onShow: null }
+    'profile':        { el: document.getElementById('profile-view'),        init: initProfile,       inited: false, onShow: null },
+    'user-profile':   { el: document.getElementById('user-profile-view'),   init: initUserProfile,   inited: false, onShow: null }
   };
+
+  let currentViewName = null;
 
   function switchView(name, opts) {
     if (!views[name]) return;
+    // Tell the view we're leaving (e.g. stop its polling timer)
+    if (currentViewName && currentViewName !== name && views[currentViewName].onHide) {
+      views[currentViewName].onHide();
+    }
+    currentViewName = name;
     Object.keys(views).forEach(key => views[key].el.classList.toggle('hidden', key !== name));
     document.querySelectorAll('.nav-link[data-view]').forEach(a => {
       a.classList.toggle('active', a.dataset.view === name);
@@ -208,6 +544,33 @@ document.addEventListener('DOMContentLoaded', () => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }
 
+  /* ---- 5.15: usernames open that person's public page ---- */
+  let userProfileFrom = 'community-feed';
+
+  function openUserProfile(username) {
+    if (!username) return;
+    if (haulDetailModal.classList.contains('active')) closeHaulDetail();
+    if (currentUser && currentUser.username === username) { switchView('profile'); return; }
+    if (currentViewName && currentViewName !== 'user-profile') userProfileFrom = currentViewName;
+    switchView('user-profile', { username });
+  }
+
+  function openStoreOnMap(id, name) {
+    switchView('find-a-store');
+    const finder = views['find-a-store'];
+    if (finder.showStore) finder.showStore(id, name);
+  }
+
+  // Capture phase: runs before the card's own click handler, so tapping a
+  // name opens the profile instead of the haul window behind it.
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('.user-link[data-username]');
+    if (!link) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openUserProfile(link.dataset.username);
+  }, true);
+
   function showDashboard(name, opts) {
     landingView.classList.add('hidden');
     dashboardShell.classList.remove('hidden');
@@ -218,6 +581,70 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboardShell.classList.add('hidden');
     landingView.classList.remove('hidden');
     window.scrollTo(0, 0);
+  }    
+  // One place that handles "your session is gone". Every logged-in API call
+  // goes through this instead of plain fetch().
+  let sessionEnding = false;
+  async function apiFetch(url, options) {
+    const res = await fetch(url, options);
+    if (res.status === 401 && currentUser && !sessionEnding) {
+      sessionEnding = true;
+      currentUser = null;
+      alert('Your session expired. Please sign in again.');
+      location.reload(); // clears state and timers, and me.php sends us to the landing page
+    }
+    return res;
+  }
+
+  // ---- Live spot list for the "Tag Thrift Spot" dropdowns (ids, not names) ----
+  let spotChoices = [];   // [{ id, name, address }]
+  async function loadSpotChoices() {
+    try {
+      const res = await apiFetch('api/stores/list.php');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.stores)) {
+        spotChoices = data.stores
+          .map(s => ({ id: s.id, name: s.name, address: s.address }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+      }
+    } catch (err) {
+      // keep the previous list; the menu says so if it is empty
+    }
+  }
+  // Two spots can share a name, so add the address to tell them apart.
+  function spotLabel(spot) {
+    const dupes = spotChoices.filter(s => s.name.toLowerCase() === spot.name.toLowerCase()).length > 1;
+    return dupes && spot.address ? spot.name + ' \u00b7 ' + spot.address : spot.name;
+  }
+  // Small "Size M · olive · cotton · Spot" line for cards.
+  function detailsHtml(item, withSpot) {
+    const parts = [];
+    if (item.size) parts.push('Size ' + item.size);
+    if (item.color) parts.push(item.color);
+    if (item.fabric) parts.push(item.fabric);
+    if (withSpot && item.store_name) parts.push(item.store_name);
+    return parts.length ? '<small class="card-details">' + escapeHtml(parts.join(' \u00b7 ')) + '</small>' : '';
+  }
+  function fillSpotMenu(menuEl, selectedId) {
+    menuEl.innerHTML = '';
+    if (!spotChoices.length) {
+      const empty = document.createElement('button');
+      empty.type = 'button';
+      empty.className = 'dropdown-item';
+      empty.disabled = true;
+      empty.textContent = 'No spots available yet';
+      menuEl.appendChild(empty);
+      return;
+    }
+    spotChoices.forEach(spot => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'dropdown-item';
+      item.dataset.value = String(spot.id);   // the id is what gets saved
+      item.textContent = spotLabel(spot);
+      if (selectedId && String(spot.id) === String(selectedId)) item.classList.add('active');
+      menuEl.appendChild(item);
+    });
   }
 
   // Top nav links
@@ -238,16 +665,6 @@ document.addEventListener('DOMContentLoaded', () => {
       switchView(view, { tab: tab });
     });
   });
-
-  // "Account Settings" has no dedicated page yet — keep it a harmless no-op
-  // instead of a dead "#" link jumping the page to the top.
-  const accountSettingsLink = document.getElementById('account-settings-link');
-  if (accountSettingsLink) {
-    accountSettingsLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      document.getElementById('user-dropdown').classList.remove('open');
-    });
-  }
 
   /* ==========================================================================
      3. SIGNUP / SIGNIN MODAL (landing-only)
@@ -306,6 +723,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dropdown-name').textContent = label;
     document.getElementById('dropdown-email').textContent = user.email;
     document.getElementById('user-avatar-btn').textContent = label.charAt(0).toUpperCase();
+    const dropdownAvatar = document.querySelector('.dropdown-avatar');
+    if (dropdownAvatar) dropdownAvatar.textContent = label.charAt(0).toUpperCase();
   }
 
   signupForm.addEventListener('submit', async (e) => {
@@ -369,6 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
       signinForm.reset();
       closeModal();
       showDashboard('find-a-store');
+      openHaulFromHash();
     } catch (err) {
       showFormError(signinError, 'Could not reach the server. Is your PHP backend running?');
     }
@@ -396,13 +816,13 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     dropdown.classList.remove('open');
     try {
-      await fetch('api/auth/logout.php');
+      await fetch('api/auth/logout.php', { method: 'POST' });
     } catch (err) {
       // Even if this request fails, still send them back to the landing
       // view client-side — worst case their session just lingers
       // server-side until it naturally expires.
     }
-    showLanding();
+    location.reload();   // fresh page: stops all timers, clears cached views and currentUser
   });
 
   /* ==========================================================================
@@ -418,6 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.success && data.logged_in) {
         applyLoggedInUser(data.user);
         showDashboard('find-a-store');
+        openHaulFromHash();
       }
     } catch (err) {
       // Backend not reachable — just stay on the landing page, same as
@@ -429,9 +850,8 @@ document.addEventListener('DOMContentLoaded', () => {
      5b. POST HAUL MODAL (dashboard-only, shared)
         Reachable from Community Feed's "+" AND Profile's "+" — defined here
         at the top level (like the modal above) rather than inside either
-        view's init function, since posting a haul needs to update BOTH
-        feedHauls and profileHaulsData and refresh whichever of those two
-        views has already been visited.
+        view's init function, since posting a haul needs to refresh
+        whichever views (Community Feed, Profile) have already been visited.
      ========================================================================== */
   const postHaulModal = document.getElementById('post-haul-modal');
   const postHaulForm = document.getElementById('post-haul-form');
@@ -440,6 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const haulDropzoneBody = document.getElementById('haul-dropzone-body');
   let editingHaulDraftId = null;     // set while continuing a draft
   let editingHaulDraftImage = null;  // that draft's existing photo path, if any
+  let editingHaulId = null;          // set while editing an already-published haul
 
     // ---- Specific Details popout ----
   const haulDetailsToggle = document.getElementById('haul-specific-details-toggle');
@@ -515,26 +936,24 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('haul-amount').addEventListener('input', updateHaulPreview);
 
   // Populate "Tag Thrift Spot" from the same store data Find A Store uses.
-let selectedHaulLocation = '';
+let selectedHaulLocation = '';   // spot name, for the label and preview
+let selectedHaulStoreId = '';   // spot id, what the server saves
 const haulLocationMenu = document.getElementById('haul-location-dropdown-menu');
-storeLocations.forEach(store => {
-  const item = document.createElement('button');
-  item.type = 'button';
-  item.className = 'dropdown-item';
-  item.dataset.value = store.name;
-  item.textContent = store.name;
-  haulLocationMenu.appendChild(item);
+const haulLocationBtn = document.getElementById('haul-location-dropdown-btn');
+setupDropdown(haulLocationBtn, haulLocationMenu, () => {});
+// The menu items are rebuilt each time the modal opens, so listen on the menu itself
+haulLocationMenu.addEventListener('click', (e) => {
+  const item = e.target.closest('.dropdown-item');
+  if (!item || item.disabled) return;
+  haulLocationMenu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
+  item.classList.add('active');
+  selectedHaulStoreId = item.dataset.value;
+  selectedHaulLocation = item.textContent;
+  document.getElementById('haul-location-label').textContent = item.textContent;
+  updateHaulPreviewLocation();
+  haulLocationMenu.classList.remove('open');
+  haulLocationBtn.classList.remove('open');
 });
-setupDropdown(
-  document.getElementById('haul-location-dropdown-btn'),
-  haulLocationMenu,
-  (item) => {
-    haulLocationMenu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
-    item.classList.add('active');
-    selectedHaulLocation = item.dataset.value;
-    document.getElementById('haul-location-label').textContent = item.textContent;
-    updateHaulPreviewLocation();
-  });
 
   function resetHaulDropzone() {
     haulMediaInput.value = '';
@@ -542,21 +961,21 @@ setupDropdown(
       <div class="haul-dropzone-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
       </div>
-      <p class="haul-dropzone-text">Click or drag photos/videos to upload<br><span>(PNG, JPG, MP4)</span></p>`;
+      <p class="haul-dropzone-text">Click or drag a photo to upload<br><span>(PNG, JPG)</span></p>`;
   }
 
     function previewHaulFile(file) {
     if (!file) return;
     if (file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file);
-      haulDropzoneBody.innerHTML = `<img class="haul-dropzone-preview" src="${url}" alt="Selected haul photo"><span class="haul-dropzone-filename">${file.name}</span>`;
+      haulDropzoneBody.innerHTML = `<img class="haul-dropzone-preview" src="${url}" alt="Selected haul photo"><span class="haul-dropzone-filename">${escapeHtml(file.name)}</span>`;
       setHaulPreviewImage(url);
     } else {
       haulDropzoneBody.innerHTML = `
         <div class="haul-dropzone-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
         </div>
-        <span class="haul-dropzone-filename">${file.name}</span>`;
+        <span class="haul-dropzone-filename">${escapeHtml(file.name)}</span>`;
     }
   }
 
@@ -578,6 +997,7 @@ setupDropdown(
     postHaulForm.reset();
     resetHaulDropzone();
     selectedHaulLocation = '';
+    selectedHaulStoreId = '';
     document.getElementById('haul-location-label').textContent = 'Select Location';
     haulLocationMenu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
     selectedHaulSize = '';
@@ -587,19 +1007,30 @@ setupDropdown(
     haulDetailsToggle.classList.remove('open');
     editingHaulDraftId = null;
     editingHaulDraftImage = null;
+    editingHaulId = null;
+    setHaulEditMode(false);
     setHaulPreviewImage(null);
     updateHaulPreview();
     updateHaulPreviewLocation();
   }
 
+  // Same form, two modes: posting a new haul, or editing a published one
+  function setHaulEditMode(on) {
+    document.getElementById('haul-save-draft').classList.toggle('hidden', on);
+    postHaulForm.querySelector('.btn-haul-primary').textContent = on ? 'Save Changes' : 'Post Haul';
+    document.getElementById('post-haul-title').textContent = on ? 'Edit your Haul' : 'Share your Ukay Haul';
+  }
+
   function openPostHaulModal() {
     updateHaulPreview();   // shows the real @username as soon as it opens
     setModalOpen(postHaulModal, true);
+    // Refresh the spot list so a spot suggested a minute ago can be tagged
+    loadSpotChoices().then(() => fillSpotMenu(haulLocationMenu, selectedHaulStoreId));
   }
   function closePostHaulModal() {
     setModalOpen(postHaulModal, false);
     // Don't leave a half-edited draft sitting in the "new haul" form
-    if (editingHaulDraftId !== null) resetHaulForm();
+    if (editingHaulDraftId !== null || editingHaulId !== null) resetHaulForm();
   }
 
   document.getElementById('post-haul-close').addEventListener('click', closePostHaulModal);
@@ -614,9 +1045,9 @@ setupDropdown(
     editingHaulDraftImage = d.image_path || null;
     document.getElementById('haul-caption').value = d.item_name || '';
     document.getElementById('haul-amount').value = d.price !== null ? d.price : '';
+    selectedHaulStoreId = d.store_id ? String(d.store_id) : '';
     selectedHaulLocation = d.store_name || '';
     document.getElementById('haul-location-label').textContent = d.store_name || 'Select Location';
-    haulLocationMenu.querySelectorAll('.dropdown-item').forEach(i => i.classList.toggle('active', i.dataset.value === d.store_name));
     updateHaulPreviewLocation();
     
     if (d.image_path) {
@@ -640,8 +1071,17 @@ setupDropdown(
     openPostHaulModal();
   }
 
-      async function submitHaul(status) {
-    const isDraft = status === 'draft';
+  // Edit one of my published hauls: reuse the draft-filling code, then switch modes
+  function openHaulEdit(h) {
+    openHaulDraft(h);
+    editingHaulDraftId = null;       // it's not a draft
+    editingHaulId = h.id;
+    setHaulEditMode(true);
+  }
+
+  async function submitHaul(status) {
+    const isEdit = editingHaulId !== null;
+    const isDraft = status === 'draft' && !isEdit;
     const caption = document.getElementById('haul-caption').value.trim();
     const hasImage = !!haulMediaInput.files[0] || !!editingHaulDraftImage;
 
@@ -659,23 +1099,23 @@ setupDropdown(
     formData.append('status', isDraft ? 'draft' : 'published');
     formData.append('item_name', caption);
     if (amountInput) formData.append('price', amountInput);
-    formData.append('store_name', selectedHaulLocation || '');
+    formData.append('store_id', selectedHaulStoreId || '');
     formData.append('size', selectedHaulSize || '');
     formData.append('color', document.getElementById('haul-color').value.trim());
     formData.append('fabric', document.getElementById('haul-fabric').value.trim());
-    formData.append('tags[]', 'near-me');
     if (editingHaulDraftId !== null) formData.append('draft_id', editingHaulDraftId);
+    if (isEdit) formData.append('haul_id', editingHaulId);
     if (haulMediaInput.files[0]) formData.append('image', haulMediaInput.files[0]);
 
     const actionBtns = postHaulForm.querySelectorAll('.haul-form-actions button');
     actionBtns.forEach(b => b.disabled = true);   // no double-submits
 
     try {
-      const res = await fetch('api/hauls/create.php', { method: 'POST', body: formData });
+      const res = await apiFetch(isEdit ? 'api/hauls/update.php' : 'api/hauls/create.php', { method: 'POST', body: formData });
       const data = await res.json();
 
       if (!data.success) {
-        alert(data.error || (isDraft ? 'Could not save your draft.' : 'Could not post your haul.'));
+        alert(data.error || (isEdit ? 'Could not save your changes.' : (isDraft ? 'Could not save your draft.' : 'Could not post your haul.')));
         return;
       }
 
@@ -690,7 +1130,7 @@ setupDropdown(
 
       resetHaulForm();
       closePostHaulModal();
-      showToast(isDraft ? 'Draft saved. Find it in Profile → My Drafts.' : 'Haul posted!');
+      showToast(isEdit ? 'Haul updated.' : (isDraft ? 'Draft saved. Find it in Profile → My Drafts.' : 'Haul posted!'));
     } catch (err) {
       alert('Could not reach the server. Is your PHP backend running?');
     } finally {
@@ -769,6 +1209,7 @@ setupDropdown(
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          sharedCoords = userCoords;
           setUserMarker(userCoords.lat, userCoords.lng);
           map.flyTo([userCoords.lat, userCoords.lng], 15, { duration: 0.8 });
           loadStores();
@@ -834,10 +1275,11 @@ setupDropdown(
         const ratingLabel = store.rating_count > 0 ? store.rating.toFixed(1) : 'New';
         const popupHtml = `
           <div class="map-popup-card">
-            <h3>${store.name}</h3>
-            <p><span class="status-dot">&bull;</span> ${store.status_text || ''}</p>
-            <p><strong>${ratingLabel}</strong> | ${store.price_range || ''}</p>
-            <a data-view-details="${store.id}">View Store Details &rarr;</a>
+            ${store.image_path ? `<img class="map-popup-photo" src="${escapeHtml(store.image_path)}" alt="Photo of ${escapeHtml(store.name)}" width="160" height="90">` : ''}
+            <h3>${escapeHtml(store.name)}</h3>
+            <p><span class="status-dot">&bull;</span> ${escapeHtml(store.status_text || '')}</p>
+            <p><strong>${ratingLabel}</strong> | ${escapeHtml(store.price_range || '')}</p>
+            <a data-view-details="${escapeHtml(store.id)}">View Store Details &rarr;</a>
           </div>`;
         const marker = L.marker([store.latitude, store.longitude], { icon: createCustomPin() })
           .addTo(map)
@@ -858,7 +1300,14 @@ setupDropdown(
         '<p class="no-results">Finding thrift spots near you…</p>';
     }
 
-    async function loadStores() {
+    // Track the in-flight load so showStore() can wait for it
+    let loadingStores = null;
+    function loadStores() {
+      loadingStores = loadStoresNow();
+      return loadingStores;
+    }
+
+    async function loadStoresNow() {
       const params = new URLSearchParams();
       if (activeSearch) params.set('search', activeSearch);
       params.set('sort', activeSort);
@@ -876,7 +1325,7 @@ setupDropdown(
       }
 
       try {
-        const res = await fetch(`api/stores/list.php?${params.toString()}`);
+        const res = await apiFetch(`api/stores/list.php?${params.toString()}`);
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Failed to load stores.');
 
@@ -886,7 +1335,7 @@ setupDropdown(
         renderStoreCards(currentStores);
       } catch (err) {
         document.getElementById('store-cards-list').innerHTML =
-          `<p class="no-results">Could not load stores — ${err.message}</p>`;
+          `<p class="no-results">Could not load stores — ${escapeHtml(err.message)}</p>`;
         document.getElementById('spots-count-text').textContent = '0 Spots Found';
       }
     }
@@ -910,13 +1359,15 @@ setupDropdown(
         card.dataset.id = store.id;
         const ratingLabel = store.rating_count > 0 ? store.rating.toFixed(1) : 'New';
                 card.innerHTML = `
-          <div class="store-img-placeholder">${store.name.charAt(0)}</div>
+          ${store.image_path
+            ? `<img class="store-img-placeholder store-img" src="${escapeHtml(store.image_path)}" alt="Photo of ${escapeHtml(store.name)}">`
+            : `<div class="store-img-placeholder">${escapeHtml(store.name.charAt(0))}</div>`}
           <div class="store-info">
             <div class="store-header">
-              <h4>${store.name}</h4>
+              <h4>${escapeHtml(store.name)}</h4>
               <span class="rating clickable" title="Rate this spot">${ratingLabel}</span>
             </div>
-            <p class="distance">${store.distance_label}</p>
+            <p class="distance">${escapeHtml(store.distance_label)}</p>
             <div class="card-bottom-row">
               <button type="button" class="directions-btn">Get Directions</button>
               <div class="card-actions">
@@ -932,12 +1383,11 @@ setupDropdown(
           </div>
           <div class="card-menu">
             <button type="button" data-action="rate">Rate this spot</button>
-            <button type="button" data-action="report">Report issue</button>
           </div>`;
 
         card.querySelector('.directions-btn').addEventListener('click', (e) => {
           e.stopPropagation();
-          focusStore(store.id);
+          openDirections(store);
         });
 
         card.querySelector('.rating').addEventListener('click', (e) => {
@@ -964,7 +1414,7 @@ setupDropdown(
           e.stopPropagation(); // don't trigger the card's "focus on map" click
           saveBtn.disabled = true;
           try {
-            const res = await fetch('api/saved-spots/toggle.php', {
+            const res = await apiFetch('api/saved-spots/toggle.php', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ store_id: store.id })
@@ -999,7 +1449,7 @@ setupDropdown(
     });
 
     function focusStore(id) {
-      const store = currentStores.find(s => s.id === id);
+      const store = currentStores.find(s => String(s.id) === String(id));
       if (!store) return;
       map.flyTo([store.latitude, store.longitude], 16, { duration: 0.6 });
       const marker = markers[id];
@@ -1012,7 +1462,7 @@ setupDropdown(
 
     document.getElementById('dashboard-map').addEventListener('click', (e) => {
       const link = e.target.closest('[data-view-details]');
-      if (link) focusStore(Number(link.dataset.viewDetails));
+      if (link) focusStore(link.dataset.viewDetails);
     });
 
     let searchDebounce;
@@ -1142,7 +1592,7 @@ setupDropdown(
     function previewSpotFile(file) {
       if (!file || !file.type.startsWith('image/')) return;
       const url = URL.createObjectURL(file);
-      spotDropzoneBody.innerHTML = `<img class="haul-dropzone-preview" src="${url}" alt="Selected spot photo"><span class="haul-dropzone-filename">${file.name}</span>`;
+      spotDropzoneBody.innerHTML = `<img class="haul-dropzone-preview" src="${url}" alt="Selected spot photo"><span class="haul-dropzone-filename">${escapeHtml(file.name)}</span>`;
     }
     spotMediaInput.addEventListener('change', () => previewSpotFile(spotMediaInput.files[0]));
     ['dragover', 'dragleave', 'drop'].forEach(evt => {
@@ -1187,11 +1637,20 @@ setupDropdown(
       const latitude = spotPinCoords.lat;
       const longitude = spotPinCoords.lng;
 
+      // multipart so the optional photo can travel with the text fields
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('address', address);
+      formData.append('hours', hours);
+      formData.append('price_range', priceRange);
+      formData.append('latitude', latitude);
+      formData.append('longitude', longitude);
+      if (spotMediaInput.files[0]) formData.append('image', spotMediaInput.files[0]);
+
       try {
-        const res = await fetch('api/stores/suggest.php', {
+        const res = await apiFetch('api/stores/suggest.php', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, address, hours, price_range: priceRange, latitude, longitude })
+          body: formData
         });
         const data = await res.json();
 
@@ -1225,14 +1684,20 @@ setupDropdown(
     });
 
     function openRateSpotModal(storeId) {
-      const store = currentStores.find(s => s.id === storeId);
+      const store = currentStores.find(s => String(s.id) === String(storeId));
       if (!store) return;
       ratingTargetStoreId = storeId;
       rateSpotNameEl.textContent = store.name;
       rateSpotForm.reset();
-      setStarDisplay(0);
+      const postAsEl = document.getElementById('rate-post-as-name');
+      if (postAsEl) postAsEl.textContent = currentUser ? '@' + currentUser.username : '@username';
+      setStarDisplay(store.my_rating || 0);
+      if (store.my_rating) {
+        rateSpotNameEl.textContent = store.name + ' · you rated ' + store.my_rating + '★ — submit to update';
+      }
       setModalOpen(rateSpotModal, true);
     }
+
     function closeRateSpotModal() { setModalOpen(rateSpotModal, false); }
     document.getElementById('rate-spot-close').addEventListener('click', closeRateSpotModal);
     document.getElementById('rate-spot-cancel').addEventListener('click', closeRateSpotModal);
@@ -1252,7 +1717,7 @@ setupDropdown(
       const isAnonymous = visibility === 'anonymous';
 
       try {
-        const res = await fetch('api/stores/rate.php', {
+        const res = await apiFetch('api/stores/rate.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ store_id: ratingTargetStoreId, stars: selectedStars, comment, anonymous: isAnonymous })
@@ -1266,7 +1731,7 @@ setupDropdown(
 
         closeRateSpotModal();
         await loadStores();
-        alert('Thanks for rating this spot!');
+        alert(data.updated ? 'Your rating was updated.' : 'Thanks for rating this spot!');
       } catch (err) {
         alert('Could not reach the server. Is your PHP backend running?');
       }
@@ -1279,6 +1744,19 @@ setupDropdown(
     // the map recalculates its size (needed because it was first drawn
     // while a sibling view may have affected layout).
     views['find-a-store'].onShow = () => setTimeout(() => map.invalidateSize(), 100);
+
+    // Used by the haul detail window: show one store on the map. If it isn't in
+    // the current list (outside the ride radius, or filtered out by a search),
+    // search for it by name first.
+    views['find-a-store'].showStore = async (id, name) => {
+      if (loadingStores) await loadingStores;
+      if (!currentStores.some(s => String(s.id) === String(id))) {
+        activeSearch = name || '';
+        document.getElementById('dashboard-search').value = activeSearch;
+        await loadStores();
+      }
+      setTimeout(() => { map.invalidateSize(); focusStore(id); }, 150);
+    };
   }
 
   /* ==========================================================================
@@ -1291,19 +1769,44 @@ setupDropdown(
     let activeFilter = 'all';
     let currentHauls = [];
     let pollTimer = null;
+    let searchText = '';      // text in the search box (captions, people, stores, color, fabric)
+    let activeUser = '';      // set by picking a person: "Posts by @name"
+    let feedReq = 0;          // ignore answers that arrive after a newer request
+    const searchInput = document.getElementById('feed-search-input');
+    const searchDd = document.getElementById('feed-search-dd');
+    const chipRow = document.getElementById('feed-chip-row');
 
     async function fetchAndRenderHauls(showLoadingState = true) {
       if (showLoadingState) {
         grid.innerHTML = '<p class="no-results">Loading hauls…</p>';
       }
       try {
-        const res = await fetch(`api/hauls/list.php?filter=${encodeURIComponent(activeFilter)}`);
+        const myReq = ++feedReq;
+        const params = new URLSearchParams({ filter: activeFilter });
+        if (searchText) params.set('q', searchText);
+        if (activeUser) params.set('username', activeUser);
+        if (activeFilter === 'near-me') {
+          // Only the person clicking the pill (showLoadingState) may trigger the
+          // browser's location prompt; background polls reuse what we know.
+          const coords = await getUserCoords(showLoadingState);
+          if (!coords) {
+            currentHauls = [];
+            grid.innerHTML = '<p class="no-results">Allow location access in your browser to see hauls near you.</p>';
+            noHaulsMsg.classList.add('hidden');
+            return;
+          }
+          params.set('lat', coords.lat);
+          params.set('lng', coords.lng);
+        }
+        const res = await apiFetch(`api/hauls/list.php?${params.toString()}`);
         const data = await res.json();
+        if (myReq !== feedReq) return; // a newer search already replaced this one
         const newHauls = data.hauls || [];
 
         // Skip the re-render entirely if nothing actually changed — avoids
         // wiping out hover states / scroll position every poll cycle for no reason.
-        const changed = JSON.stringify(newHauls.map(h => h.id)) !== JSON.stringify(currentHauls.map(h => h.id));
+        const sig = list => JSON.stringify(list.map(h => [h.id, h.like_count, h.liked_by_me]));
+        const changed = sig(newHauls) !== sig(currentHauls);
         currentHauls = newHauls;
         if (changed || showLoadingState) {
           renderHauls();
@@ -1320,38 +1823,157 @@ setupDropdown(
     function renderHauls() {
       grid.innerHTML = '';
       currentHauls.forEach(h => {
-        const height = 220 + Math.floor(Math.random() * 240);
         const mediaHtml = h.image_path
-          ? `<img class="haul-fill" src="${h.image_path}" alt="${h.item_name}" style="height:${height}px; object-fit:cover;">`
-          : `<div class="haul-fill" style="height:${height}px;"></div>`;
+          ? `<img class="haul-fill" src="${escapeHtml(h.image_path)}" alt="${escapeHtml(h.item_name)}">`
+          : `<div class="haul-fill"></div>`;
         const card = document.createElement('div');
         card.className = 'haul-card';
         card.innerHTML = `
           ${mediaHtml}
           <div class="haul-caption">
-            @${h.username} &middot; ${h.price !== null ? '₱' + h.price.toFixed(0) : 'Price N/A'}
-            <span>${h.item_name}${h.store_name ? ' · ' + h.store_name : ''}</span>
-          </div>`;
+            <button type="button" class="user-link" data-username="${escapeHtml(h.username)}">@${escapeHtml(h.username)}</button> &middot; ${h.price !== null ? '₱' + h.price.toFixed(0) : 'Price N/A'}
+            <span>${escapeHtml(h.item_name)}${h.store_id && h.store_name ? ' · <button type="button" class="haul-store-link" data-store-id="' + h.store_id + '" data-store-name="' + escapeHtml(h.store_name) + '">' + escapeHtml(h.store_name) + '</button>' : (h.store_name ? ' · ' + escapeHtml(h.store_name) : '')}</span>
+            ${detailsHtml(h, false)}
+          </div>
+          <button type="button" class="haul-like${h.liked_by_me ? ' liked' : ''}" aria-pressed="${h.liked_by_me ? 'true' : 'false'}" aria-label="Like this haul">
+            <span class="heart">${h.liked_by_me ? '&#9829;' : '&#9825;'}</span><span class="count">${h.like_count}</span>
+          </button>`;
+        const likeBtn = card.querySelector('.haul-like');
+        likeBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          likeBtn.disabled = true;
+          const result = await toggleHaulLike(h.id);
+          likeBtn.disabled = false;
+          if (!result) return;
+          h.liked_by_me = result.liked;
+          h.like_count = result.like_count;
+          likeBtn.classList.toggle('liked', result.liked);
+          likeBtn.setAttribute('aria-pressed', result.liked ? 'true' : 'false');
+          likeBtn.querySelector('.heart').innerHTML = result.liked ? '&#9829;' : '&#9825;';
+          likeBtn.querySelector('.count').textContent = h.like_count;
+        });
+        const storeLink = card.querySelector('.haul-store-link');
+        if (storeLink) {
+          storeLink.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openStoreInFinder(storeLink.dataset.storeId, storeLink.dataset.storeName);
+          });
+        }
+        card.appendChild(buildHaulMenu(h));
+        card.addEventListener('click', () => openHaulDetail(h.id));
         grid.appendChild(card);
       });
+      noHaulsMsg.textContent = (searchText || activeUser)
+        ? 'No hauls match your search.'
+        : 'No hauls match this filter yet \u2014 be the first to share one!';
       noHaulsMsg.classList.toggle('hidden', currentHauls.length > 0);
     }
 
+    function openStoreInFinder(id, name) {
+      switchView('find-a-store');
+      const finder = views['find-a-store'];
+      if (finder.showStore) finder.showStore(id, name);
+    }
+
+    /* ---- search box: 300 ms debounce, people + stores dropdown ---- */
+    let searchTimer = null;
+    let ddReq = 0;
+
+    function hideDropdown() {
+      searchDd.classList.add('hidden');
+      searchDd.innerHTML = '';
+    }
+
+    function setActiveUser(name) {
+      activeUser = name;
+      document.getElementById('feed-chip-name').textContent = name;
+      chipRow.classList.toggle('hidden', !name);
+    }
+
+    async function updateDropdown(text) {
+      const myDd = ++ddReq;
+      if (text.length < 2) { hideDropdown(); return; }
+      try {
+        const [uRes, sRes] = await Promise.all([
+          apiFetch(`api/users/search.php?q=${encodeURIComponent(text)}`),
+          fetch(`api/stores/list.php?search=${encodeURIComponent(text)}`)
+        ]);
+        const uData = await uRes.json();
+        const sData = await sRes.json();
+        if (myDd !== ddReq) return;
+        const users = uData.users || [];
+        const stores = (sData.stores || []).slice(0, 4);
+        if (!users.length && !stores.length) { hideDropdown(); return; }
+        let html = '';
+        if (users.length) {
+          html += '<div class="feed-dd-label">People</div>' + users.map(u =>
+            `<button type="button" class="feed-dd-item" data-kind="user" data-username="${escapeHtml(u.username)}">
+               <span>@${escapeHtml(u.username)}${u.display_name ? ' <em>' + escapeHtml(u.display_name) + '</em>' : ''}</span>
+               <small>${u.haul_count} post${u.haul_count === 1 ? '' : 's'}</small></button>`).join('');
+        }
+        if (stores.length) {
+          html += '<div class="feed-dd-label">Stores</div>' + stores.map(st =>
+            `<button type="button" class="feed-dd-item" data-kind="store" data-store-id="${st.id}" data-store-name="${escapeHtml(st.name)}">
+               <span>${escapeHtml(st.name)}</span><small>View on map</small></button>`).join('');
+        }
+        searchDd.innerHTML = html;
+        searchDd.classList.remove('hidden');
+      } catch (err) {
+        hideDropdown(); // the search still filters the feed even if the dropdown fails
+      }
+    }
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        searchText = searchInput.value.trim();
+        fetchAndRenderHauls();
+        updateDropdown(searchText);
+      }, 300);
+    });
+    searchInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideDropdown(); });
+
+    searchDd.addEventListener('click', (e) => {
+      const item = e.target.closest('.feed-dd-item');
+      if (!item) return;
+      if (item.dataset.kind === 'user') {
+        searchInput.value = '';
+        searchText = '';
+        setActiveUser(item.dataset.username);
+        hideDropdown();
+        fetchAndRenderHauls();
+      } else {
+        hideDropdown();
+        openStoreInFinder(item.dataset.storeId, item.dataset.storeName);
+      }
+    });
+
+    document.getElementById('feed-chip-clear').addEventListener('click', () => {
+      setActiveUser('');
+      fetchAndRenderHauls();
+    });
+
+    // click anywhere else closes the dropdown
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#feed-search')) hideDropdown();
+    });
+
     function startPolling() {
       stopPolling();
-      pollTimer = setInterval(() => fetchAndRenderHauls(false), 8000); // check every 8s
+      pollTimer = setInterval(() => { if (!document.hidden) fetchAndRenderHauls(false); }, 8000); // every 8s, skipped while the browser tab is hidden
     }
     function stopPolling() {
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = null;
     }
 
-    fetchAndRenderHauls();
+    loadSavedHaulIds().then(() => fetchAndRenderHauls());
     startPolling();
 
     views['community-feed'].refreshHauls = () => fetchAndRenderHauls(false);
     // Pause polling while this view isn't showing, resume when it's shown again
     views['community-feed'].onShow = () => { fetchAndRenderHauls(false); startPolling(); };
+    views['community-feed'].onHide = stopPolling;
 
     pillsContainer.addEventListener('click', (e) => {
       const btn = e.target.closest('.pill');
@@ -1366,6 +1988,115 @@ setupDropdown(
     document.getElementById('add-haul-btn').addEventListener('click', () => {
       openPostHaulModal();
     });
+  }
+
+  /* ==========================================================================
+     7b. PUBLIC PROFILE — another person's page (read-only), lazily initialized
+     ========================================================================== */
+  function initUserProfile(opts) {
+    const grid = document.getElementById('up-masonry');
+    const spotsList = document.getElementById('up-spots-list');
+    const emptyMsg = document.getElementById('up-empty');
+    const tabs = document.getElementById('up-tabs');
+    let activeTab = 'hauls';
+    let data = null;
+    let loadId = 0;
+
+    function showTab(tab) {
+      activeTab = tab;
+      tabs.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
+      grid.classList.toggle('hidden', tab !== 'hauls');
+      spotsList.classList.toggle('hidden', tab !== 'spots');
+      const list = data ? (tab === 'hauls' ? data.hauls : data.spots) : [];
+      emptyMsg.textContent = tab === 'hauls' ? 'No hauls shared yet.' : 'No tagged spots yet.';
+      emptyMsg.classList.toggle('hidden', !data || list.length > 0);
+    }
+
+    function render() {
+      const u = data.user;
+      const name = u.display_name || u.username;
+      document.getElementById('up-name').textContent = name;
+      document.getElementById('up-handle').textContent = '@' + u.username;
+      document.getElementById('up-location').textContent = u.location || 'Location not set';
+      document.getElementById('up-bio').textContent = u.bio || 'No bio yet.';
+      document.getElementById('up-avatar').textContent = name.charAt(0).toUpperCase();
+      document.getElementById('up-hauls').textContent = formatStatCount(data.hauls_count);
+      document.getElementById('up-likes').textContent = formatStatCount(data.likes_count);
+      document.getElementById('up-spots').textContent = formatStatCount(data.spots_count);
+      const joined = new Date(String(u.created_at).replace(' ', 'T'));
+      document.getElementById('up-joined').textContent = isNaN(joined)
+        ? '–' : joined.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+
+      grid.innerHTML = '';
+      data.hauls.forEach(h => {
+        const mediaHtml = h.image_path
+          ? `<img class="item-fill" src="${escapeHtml(h.image_path)}" alt="${escapeHtml(h.item_name)}">`
+          : `<div class="item-fill"></div>`;
+        const card = document.createElement('div');
+        card.className = 'profile-card-item';
+        card.innerHTML = `
+          ${mediaHtml}
+          <div class="item-caption">
+            ${escapeHtml(h.item_name)}
+            <span>${h.price !== null ? '₱' + h.price.toFixed(0) : 'Price N/A'}</span>
+            ${detailsHtml(h, true)}
+          </div>`;
+        card.addEventListener('click', () => openHaulDetail(h.id));
+        grid.appendChild(card);
+      });
+
+      spotsList.innerHTML = data.spots.map(sp => `
+        <button type="button" class="up-spot" data-store-id="${sp.id}" data-store-name="${escapeHtml(sp.name)}">
+          <span class="up-spot-name">${escapeHtml(sp.name)}</span>
+          <span class="up-spot-meta">${sp.haul_count} post${sp.haul_count === 1 ? '' : 's'}${sp.address ? ' &middot; ' + escapeHtml(sp.address) : ''}</span>
+          <span class="up-spot-go">View on map &rarr;</span>
+        </button>`).join('');
+      showTab(activeTab);
+    }
+
+    async function load(username) {
+      const myLoad = ++loadId;
+      data = null;
+      activeTab = 'hauls';
+      grid.innerHTML = '<p class="no-results">Loading profile…</p>';
+      spotsList.innerHTML = '';
+      emptyMsg.classList.add('hidden');
+      document.getElementById('up-name').textContent = '@' + username;
+      document.getElementById('up-handle').textContent = '';
+      document.getElementById('up-location').textContent = '';
+      document.getElementById('up-bio').textContent = '';
+      document.getElementById('up-avatar').textContent = (username || '?').charAt(0).toUpperCase();
+      ['up-hauls', 'up-likes', 'up-spots', 'up-joined'].forEach(id => { document.getElementById(id).textContent = '–'; });
+      showTab('hauls');
+      try {
+        const res = await apiFetch(`api/profile/get.php?username=${encodeURIComponent(username)}`);
+        const body = await res.json();
+        if (myLoad !== loadId) return;
+        if (!body.success) {
+          grid.innerHTML = `<p class="no-results">${escapeHtml(body.error || 'Could not load this profile.')}</p>`;
+          return;
+        }
+        data = body;
+        render();
+      } catch (err) {
+        if (myLoad === loadId) grid.innerHTML = '<p class="no-results">Could not reach the server. Try again.</p>';
+      }
+    }
+
+    tabs.addEventListener('click', (e) => {
+      const btn = e.target.closest('.pill');
+      if (btn) showTab(btn.dataset.tab);
+    });
+    spotsList.addEventListener('click', (e) => {
+      const btn = e.target.closest('.up-spot');
+      if (btn) openStoreOnMap(btn.dataset.storeId, btn.dataset.storeName);
+    });
+    document.getElementById('up-back').addEventListener('click', () => {
+      switchView(userProfileFrom || 'community-feed');
+    });
+
+    views['user-profile'].onShow = (o) => { if (o && o.username) load(o.username); };
+    load(opts.username);
   }
 
   /* ==========================================================================
@@ -1396,7 +2127,7 @@ setupDropdown(
     async function fetchNotifications(showLoading = true) {
       if (showLoading) listEl.innerHTML = '<p class="no-results">Loading notifications…</p>';
       try {
-        const res = await fetch('api/notifications/list.php');
+        const res = await apiFetch('api/notifications/list.php');
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Failed to load notifications.');
 
@@ -1406,7 +2137,7 @@ setupDropdown(
         if (changed || showLoading) render();
       } catch (err) {
         if (showLoading) {
-          listEl.innerHTML = `<p class="no-results">Could not load notifications — ${err.message}</p>`;
+          listEl.innerHTML = `<p class="no-results">Could not load notifications — ${escapeHtml(err.message)}</p>`;
         }
       }
     }
@@ -1424,10 +2155,10 @@ setupDropdown(
         const actor = n.actor_username || 'UkayFinds';
         item.innerHTML = `
           <span class="notif-dot"></span>
-          <div class="notif-avatar${isSystem ? ' notif-avatar-system' : ''}">${isSystem ? '★' : actor.charAt(0).toUpperCase()}</div>
+          <div class="notif-avatar${isSystem ? ' notif-avatar-system' : ''}">${isSystem ? '★' : escapeHtml(actor.charAt(0).toUpperCase())}</div>
           <div class="notif-body">
-            <p class="notif-text">${isSystem ? '' : `<strong>@${actor}</strong> `}${n.message}</p>
-            <p class="notif-location">${n.location_label || ''}</p>
+            <p class="notif-text">${isSystem ? '' : `<button type="button" class="user-link" data-username="${escapeHtml(actor)}">@${escapeHtml(actor)}</button> `}${escapeHtml(n.message)}</p>
+            <p class="notif-location">${escapeHtml(n.location_label || '')}</p>
           </div>
           <div class="notif-right">
             <span class="notif-time">${timeAgo(n.created_at)}</span>
@@ -1446,7 +2177,7 @@ setupDropdown(
       n.is_read = true;
       render();
       try {
-        await fetch('api/notifications/mark_read.php', {
+        await apiFetch('api/notifications/mark_read.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id })
@@ -1462,7 +2193,7 @@ setupDropdown(
       notifications.forEach(n => n.is_read = true);
       render();
       try {
-        await fetch('api/notifications/mark_read.php', {
+        await apiFetch('api/notifications/mark_read.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
@@ -1472,7 +2203,7 @@ setupDropdown(
 
     function startPolling() {
       stopPolling();
-      pollTimer = setInterval(() => fetchNotifications(false), 5000);
+      pollTimer = setInterval(() => { if (!document.hidden) fetchNotifications(false); }, 5000); // skipped while the browser tab is hidden
     }
     function stopPolling() {
       if (pollTimer) clearInterval(pollTimer);
@@ -1482,6 +2213,7 @@ setupDropdown(
     fetchNotifications();
     startPolling();
     views['notifications'].onShow = () => { fetchNotifications(false); startPolling(); };
+    views['notifications'].onHide = stopPolling;
 
     const allPill = pillsContainer.querySelector('.pill[data-filter="all"]');
     const dropdownBtn = document.getElementById('filter-dropdown-btn');
@@ -1511,19 +2243,23 @@ setupDropdown(
   function initProfile(opts) {
 
     // Overwrite the static placeholder profile card with the real logged-in user
-    if (currentUser) {
+    const LOCATION_PLACEHOLDER = 'Location not set';
+    const BIO_PLACEHOLDER = 'No bio yet.';
+    function fillProfileCard() {
+      if (!currentUser) return;
       const displayName = currentUser.display_name || currentUser.username;
       document.getElementById('profile-name').textContent = displayName;
       document.getElementById('profile-handle').textContent = '@' + currentUser.username;
-      document.getElementById('profile-location').textContent = currentUser.location || 'Location not set';
-      document.getElementById('profile-bio').textContent = currentUser.bio || 'No bio yet.';
+      document.getElementById('profile-location').textContent = currentUser.location || LOCATION_PLACEHOLDER;
+      document.getElementById('profile-bio').textContent = currentUser.bio || BIO_PLACEHOLDER;
       document.querySelector('.profile-avatar').textContent = displayName.charAt(0).toUpperCase();
     }
+    fillProfileCard();
 
     // Fetch real stats (hauls posted, likes received, spots saved) instead
     // of the static placeholder numbers baked into the HTML.
      function loadStats() {
-      fetch('api/profile/stats.php')
+      apiFetch('api/profile/stats.php')
         .then(res => res.json())
         .then(data => {
           if (!data.success) return;
@@ -1557,7 +2293,7 @@ setupDropdown(
     let activeTab = 'hauls';
 
     function render() {
-      grid.classList.toggle('hidden', activeTab !== 'hauls');
+      grid.classList.toggle('hidden', activeTab !== 'hauls' && activeTab !== 'saved');
       savedPanel.classList.toggle('hidden', activeTab !== 'spots');
       showcasePanel.classList.toggle('hidden', activeTab !== 'showcase');
       draftsPanel.classList.toggle('hidden', activeTab !== 'drafts');
@@ -1570,6 +2306,8 @@ setupDropdown(
         renderSavedSpots();
       } else if (activeTab === 'showcase') {
         renderShowcase();
+      } else if (activeTab === 'saved') {
+        renderSavedHauls();
       } else {
         renderDrafts();
       }
@@ -1578,7 +2316,7 @@ setupDropdown(
     async function renderHauls() {
       grid.innerHTML = '<p class="no-results">Loading your hauls…</p>';
       try {
-        const res = await fetch('api/hauls/list.php?mine=1');
+        const res = await apiFetch('api/hauls/list.php?mine=1');
         const data = await res.json();
         const myHauls = data.hauls || [];
 
@@ -1586,18 +2324,25 @@ setupDropdown(
         noItemsMsg.classList.toggle('hidden', myHauls.length > 0);
 
         myHauls.forEach(h => {
-          const height = 220 + Math.floor(Math.random() * 240);
           const mediaHtml = h.image_path
-            ? `<img class="item-fill" src="${h.image_path}" alt="${h.item_name}" style="height:${height}px; object-fit:cover;">`
-            : `<div class="item-fill" style="height:${height}px;"></div>`;
+            ? `<img class="item-fill" src="${escapeHtml(h.image_path)}" alt="${escapeHtml(h.item_name)}">`
+            : `<div class="item-fill"></div>`;
           const card = document.createElement('div');
           card.className = 'profile-card-item';
           card.innerHTML = `
             ${mediaHtml}
             <div class="item-caption">
-              ${h.item_name}
+              ${escapeHtml(h.item_name)}
               <span>${h.price !== null ? '₱' + h.price.toFixed(0) : 'Price N/A'}</span>
+              ${detailsHtml(h, true)}
+            </div>
+            <div class="item-actions">
+              <button type="button" data-action="edit">Edit</button>
+              <button type="button" data-action="delete" class="danger">Delete</button>
             </div>`;
+          card.querySelector('[data-action="edit"]').addEventListener('click', (e) => { e.stopPropagation(); openHaulEdit(h); });
+          card.querySelector('[data-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); deleteMyHaul(h); });
+          card.addEventListener('click', () => openHaulDetail(h.id));
           grid.appendChild(card);
         });
       } catch (err) {
@@ -1605,10 +2350,71 @@ setupDropdown(
       }
     }
 
-    async function renderSavedSpots() {
+    async function renderSavedHauls() {
+      grid.innerHTML = '<p class="no-results">Loading saved items…</p>';
+      try {
+        const res = await apiFetch('api/saved-hauls/list.php');
+        const data = await res.json();
+        const items = data.hauls || [];
+        grid.innerHTML = '';
+        noItemsMsg.classList.toggle('hidden', items.length > 0);
+        items.forEach(h => {
+          const mediaHtml = h.image_path
+            ? `<img class="item-fill" src="${escapeHtml(h.image_path)}" alt="${escapeHtml(h.item_name)}">`
+            : `<div class="item-fill"></div>`;
+          const card = document.createElement('div');
+          card.className = 'profile-card-item';
+          card.innerHTML = `
+            ${mediaHtml}
+            <div class="item-caption">
+              ${escapeHtml(h.item_name)}
+              <span>${h.price !== null ? '₱' + h.price.toFixed(0) : 'Price N/A'}</span>
+              ${detailsHtml(h, true)}
+            </div>
+            <div class="item-actions"><button type="button" data-action="unsave">Unsave</button></div>`;
+          card.querySelector('[data-action="unsave"]').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (await toggleSavedHaul(h.id) === false) renderSavedHauls();
+          });
+          card.addEventListener('click', () => openHaulDetail(h.id));
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        grid.innerHTML = '<p class="no-results">Could not load your saved items.</p>';
+      }
+    }
+
+    async function deleteMyHaul(h) {
+      if (!confirm('Delete this haul? This can\'t be undone.')) return;
+      try {
+        const res = await apiFetch('api/hauls/delete.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: h.id })
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Could not delete that haul.', 'error'); return; }
+        showToast('Haul deleted.');
+        renderHauls();
+        loadStats();
+        if (views['community-feed'].inited && views['community-feed'].refreshHauls) views['community-feed'].refreshHauls();
+      } catch (err) {
+        showToast('Could not reach the server. Try again.', 'error');
+      }
+    }
+
+    async function renderSavedSpots(askForLocation = false) {
       savedListEl.innerHTML = '<p class="no-results">Loading saved spots…</p>';
       try {
-        const res = await fetch('api/saved-spots/list.php');
+        // "Nearby" uses the visitor's position when we can get it without
+        // nagging; picking Nearby from the dropdown is allowed to ask.
+        const params = new URLSearchParams();
+        if (savedSort === 'nearby') {
+          const coords = await getUserCoords(askForLocation);
+          if (coords) { params.set('lat', coords.lat); params.set('lng', coords.lng); }
+        }
+        const qs = params.toString();
+        const res = await apiFetch('api/saved-spots/list.php' + (qs ? '?' + qs : ''));
         const data = await res.json();
         savedSpots = data.spots || [];
                 
@@ -1624,16 +2430,16 @@ setupDropdown(
           card.className = 'saved-spot-card';
           card.dataset.id = spot.id;
           card.innerHTML = `
-            <div class="saved-spot-thumb">${spot.name.charAt(0)}</div>
+            <div class="saved-spot-thumb">${escapeHtml(spot.name.charAt(0))}</div>
             <div class="saved-spot-info">
               <div class="saved-spot-top">
-                <h4>${spot.name}</h4>
+                <h4>${escapeHtml(spot.name)}</h4>
                 <div class="rating-menu">
                   <span class="rating">${ratingLabel}</span>
                   <button type="button" class="card-menu-btn" aria-label="More options">&#8942;</button>
                 </div>
               </div>
-              <p class="distance">${spot.address || ''}</p>
+              <p class="distance">${escapeHtml(spot.distance_label || spot.address || '')}</p>
               <div class="saved-spot-bottom">
                 <button type="button" class="saved-directions-btn">Get Directions</button>
                 <button type="button" class="saved-tag">
@@ -1644,9 +2450,12 @@ setupDropdown(
             </div>
             <div class="card-menu">
               <button type="button" data-action="remove">Remove from saved</button>
-              <button type="button" data-action="report">Report issue</button>
-            </div>`;
+              </div>`;
 
+          card.querySelector('.saved-directions-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openDirections(spot);
+          });
           card.querySelector('.saved-tag').addEventListener('click', () => unsaveSpot(spot.id));
           card.querySelector('[data-action="remove"]').addEventListener('click', () => unsaveSpot(spot.id));
 
@@ -1667,7 +2476,7 @@ setupDropdown(
 
     async function unsaveSpot(id) {
       try {
-        await fetch('api/saved-spots/toggle.php', {
+        await apiFetch('api/saved-spots/toggle.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ store_id: id })
@@ -1678,7 +2487,7 @@ setupDropdown(
 
     async function renderShowcase() {
       try {
-        const res = await fetch('api/showcase/list.php');
+        const res = await apiFetch('api/showcase/list.php');
         const data = await res.json();
         showcaseItems = data.listings || [];
       } catch (err) {
@@ -1693,24 +2502,30 @@ setupDropdown(
 
       showcaseGrid.innerHTML = '';
       showcaseItems.forEach(item => {
-        const height = 220 + Math.floor(Math.random() * 200); // no real images yet
         const displayPrice = item.selling_method === 'bidding'
           ? `Starting at ₱${item.bid_start_price.toFixed(0)} (+₱${item.bid_increment.toFixed(0)})`
           : `${item.selling_method.charAt(0).toUpperCase() + item.selling_method.slice(1)} at ₱${(item[item.selling_method + '_price']).toFixed(0)}`;
 
         const mediaHtml = item.image_path
-          ? `<img class="item-fill" src="${item.image_path}" alt="${item.item_name}" style="height:${height}px; object-fit:cover;">`
-          : `<div class="item-fill" style="height:${height}px;"></div>`;
+          ? `<img class="item-fill" src="${escapeHtml(item.image_path)}" alt="${escapeHtml(item.item_name)}">`
+          : `<div class="item-fill"></div>`;
 
         const card = document.createElement('div');
         card.className = 'showcase-item';
         card.innerHTML = `
-          <span class="showcase-method-badge showcase-method-${item.selling_method}">${item.selling_method}</span>
+          <span class="showcase-method-badge showcase-method-${escapeHtml(item.selling_method)}">${escapeHtml(item.selling_method)}</span>
           ${mediaHtml}
           <div class="item-caption">
-            ${item.item_name}
-            <span>${displayPrice}</span>
+            ${escapeHtml(item.item_name)}
+            <span>${escapeHtml(displayPrice)}</span>
+            ${detailsHtml(item, true)}
+          </div>
+          <div class="item-actions">
+            <button type="button" data-action="edit">Edit</button>
+            <button type="button" data-action="delete" class="danger">Delete</button>
           </div>`;
+        card.querySelector('[data-action="edit"]').addEventListener('click', (e) => { e.stopPropagation(); openShowcaseEdit(item); });
+        card.querySelector('[data-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); deleteMyShowcase(item); });
         showcaseGrid.appendChild(card);
       });
     }
@@ -1718,7 +2533,7 @@ setupDropdown(
         async function renderDrafts() {
       draftsListEl.innerHTML = '<p class="no-results">Loading drafts…</p>';
       try {
-        const res = await fetch('api/drafts/list.php');
+        const res = await apiFetch('api/drafts/list.php');
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Failed to load drafts.');
 
@@ -1754,7 +2569,7 @@ setupDropdown(
           card.querySelector('[data-action="delete"]').addEventListener('click', async () => {
             if (!confirm('Delete this draft? This can\'t be undone.')) return;
             try {
-              const r = await fetch('api/drafts/delete.php', {
+              const r = await apiFetch('api/drafts/delete.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: d.type, id: d.id })
@@ -1799,6 +2614,7 @@ setupDropdown(
     let selectedMethod = 'bidding';
     let editingShowcaseDraftId = null;
     let editingShowcaseDraftImage = null;
+    let editingShowcaseId = null;      // set while editing an already-active listing
 
         // ---- Preview + Specific Details + Tag Thrift Spot ----
     const showcasePreviewMedia = document.getElementById('showcase-preview-media');
@@ -1807,7 +2623,8 @@ setupDropdown(
     const showcaseSizeMenu = document.getElementById('showcase-size-dropdown-menu');
     const showcaseLocationMenu = document.getElementById('showcase-location-dropdown-menu');
     let selectedShowcaseSize = '';
-    let selectedShowcaseLocation = '';
+    let selectedShowcaseLocation = '';   // spot name, for the label and preview
+    let selectedShowcaseStoreId = '';    // spot id, what the server saves
 
     showcaseDetailsToggle.addEventListener('click', () => {
       const opening = !showcaseDetailsPanel.classList.contains('open');
@@ -1821,26 +2638,27 @@ setupDropdown(
       showcaseSizeMenu.querySelectorAll('.dropdown-item').forEach(i =>
         i.classList.toggle('active', !!value && i.dataset.value === value));
     }
-    function setShowcaseLocation(value) {
-      selectedShowcaseLocation = value || '';
-      document.getElementById('showcase-location-label').textContent = value || 'Select Location';
+    function setShowcaseLocation(id, name) {
+      selectedShowcaseStoreId = id ? String(id) : '';
+      selectedShowcaseLocation = name || '';
+      document.getElementById('showcase-location-label').textContent = name || 'Select Location';
       showcaseLocationMenu.querySelectorAll('.dropdown-item').forEach(i =>
-        i.classList.toggle('active', !!value && i.dataset.value === value));
+        i.classList.toggle('active', !!id && i.dataset.value === String(id)));
       updateShowcasePreview();
     }
 
-    storeLocations.forEach(store => {
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'dropdown-item';
-      item.dataset.value = store.name;
-      item.textContent = store.name;
-      showcaseLocationMenu.appendChild(item);
-    });
     setupDropdown(document.getElementById('showcase-size-dropdown-btn'), showcaseSizeMenu,
       (item) => setShowcaseSize(item.dataset.value));
-    setupDropdown(document.getElementById('showcase-location-dropdown-btn'), showcaseLocationMenu,
-      (item) => setShowcaseLocation(item.dataset.value));
+    const showcaseLocationBtn = document.getElementById('showcase-location-dropdown-btn');
+    setupDropdown(showcaseLocationBtn, showcaseLocationMenu, () => {});
+    // The menu items are rebuilt each time the modal opens, so listen on the menu itself
+    showcaseLocationMenu.addEventListener('click', (e) => {
+      const item = e.target.closest('.dropdown-item');
+      if (!item || item.disabled) return;
+      setShowcaseLocation(item.dataset.value, item.textContent);
+      showcaseLocationMenu.classList.remove('open');
+      showcaseLocationBtn.classList.remove('open');
+    });
 
     function updateShowcasePreview() {
       const val = (id) => document.getElementById(id).value.trim();
@@ -1890,7 +2708,7 @@ setupDropdown(
       if (!file || !file.type.startsWith('image/')) return;
       const url = URL.createObjectURL(file);
       setPreviewMedia(showcasePreviewMedia, url);
-      showcaseDropzoneBody.innerHTML = `<img class="haul-dropzone-preview" src="${url}" alt="Selected item photo"><span class="haul-dropzone-filename">${file.name}</span>`;
+      showcaseDropzoneBody.innerHTML = `<img class="haul-dropzone-preview" src="${url}" alt="Selected item photo"><span class="haul-dropzone-filename">${escapeHtml(file.name)}</span>`;
     }
 
     showcaseMediaInput.addEventListener('change', () => previewShowcaseFile(showcaseMediaInput.files[0]));
@@ -1906,7 +2724,11 @@ setupDropdown(
       });
     });
 
-    function openPostShowcaseModal() { setModalOpen(showcaseModal, true); }
+    function openPostShowcaseModal() {
+      setModalOpen(showcaseModal, true);
+      // Refresh the spot list so a spot suggested a minute ago can be tagged
+      loadSpotChoices().then(() => fillSpotMenu(showcaseLocationMenu, selectedShowcaseStoreId));
+    }
 
     function resetShowcaseForm() {
       showcaseForm.reset();
@@ -1918,13 +2740,21 @@ setupDropdown(
       showcaseDetailsToggle.classList.remove('open');
       editingShowcaseDraftId = null;
       editingShowcaseDraftImage = null;
+      editingShowcaseId = null;
+      setShowcaseEditMode(false);
       setPreviewMedia(showcasePreviewMedia, null);
       updateShowcasePreview();
     }
 
     function closePostShowcaseModal() {
       setModalOpen(showcaseModal, false);
-      if (editingShowcaseDraftId !== null) resetShowcaseForm();
+      if (editingShowcaseDraftId !== null || editingShowcaseId !== null) resetShowcaseForm();
+    }
+
+    function setShowcaseEditMode(on) {
+      document.getElementById('showcase-save-draft').classList.toggle('hidden', on);
+      showcaseForm.querySelector('.btn-haul-primary').textContent = on ? 'Save Changes' : 'Post to Showcase';
+      document.getElementById('post-showcase-title').textContent = on ? 'Edit Your Listing' : 'List on Your Showcase';
     }
 
     // These three were missing: the X, clicking outside, and Escape never closed this modal.
@@ -1948,7 +2778,7 @@ setupDropdown(
       setVal('grab-price', d.grab_price);
       setVal('mine-price', d.mine_price);
       setShowcaseSize(d.size);
-      setShowcaseLocation(d.store_name);
+      setShowcaseLocation(d.store_id, d.store_name);
       setVal('showcase-color', d.color);
       setVal('showcase-fabric', d.fabric);
       if (d.size || d.color || d.fabric) {
@@ -1963,13 +2793,39 @@ setupDropdown(
       openPostShowcaseModal();
     }
 
+    // Edit one of my active listings: reuse the draft-filling code, then switch modes
+    function openShowcaseEdit(item) {
+      openShowcaseDraft(item);
+      editingShowcaseDraftId = null;   // it's not a draft
+      editingShowcaseId = item.id;
+      setShowcaseEditMode(true);
+    }
+
+    async function deleteMyShowcase(item) {
+      if (!confirm('Delete this listing? This can\'t be undone.')) return;
+      try {
+        const res = await apiFetch('api/showcase/delete.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: item.id })
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Could not delete that listing.', 'error'); return; }
+        showToast('Listing deleted.');
+        await renderShowcase();
+      } catch (err) {
+        showToast('Could not reach the server. Try again.', 'error');
+      }
+    }
+
     function readPrice(id) {
       const val = parseFloat(document.getElementById(id).value);
       return isNaN(val) || val < 0 ? null : val;
     }
 
     async function submitShowcase(status) {
-      const isDraft = status === 'draft';
+      const isEdit = editingShowcaseId !== null;
+      const isDraft = status === 'draft' && !isEdit;
       const name = document.getElementById('showcase-item-name').value.trim();
       const hasImage = !!showcaseMediaInput.files[0] || !!editingShowcaseDraftImage;
 
@@ -1990,8 +2846,9 @@ setupDropdown(
       formData.append('size', selectedShowcaseSize || '');
       formData.append('color', document.getElementById('showcase-color').value.trim());
       formData.append('fabric', document.getElementById('showcase-fabric').value.trim());
-      formData.append('store_name', selectedShowcaseLocation || '');
+      formData.append('store_id', selectedShowcaseStoreId || '');
       if (editingShowcaseDraftId !== null) formData.append('draft_id', editingShowcaseDraftId);
+      if (isEdit) formData.append('listing_id', editingShowcaseId);
 
       if (selectedMethod === 'bidding') {
         const start = readPrice('bid-start-price');
@@ -2017,11 +2874,11 @@ setupDropdown(
       actionBtns.forEach(b => b.disabled = true);
 
       try {
-        const res = await fetch('api/showcase/create.php', { method: 'POST', body: formData });
+        const res = await apiFetch(isEdit ? 'api/showcase/update.php' : 'api/showcase/create.php', { method: 'POST', body: formData });
         const data = await res.json();
 
         if (!data.success) {
-          alert(data.error || (isDraft ? 'Could not save your draft.' : 'Could not post to showcase.'));
+          alert(data.error || (isEdit ? 'Could not save your changes.' : (isDraft ? 'Could not save your draft.' : 'Could not post to showcase.')));
           return;
         }
 
@@ -2030,7 +2887,7 @@ setupDropdown(
 
         resetShowcaseForm();
         closePostShowcaseModal();
-        showToast(isDraft ? 'Draft saved. Find it in My Drafts.' : 'Listed on your showcase!');
+        showToast(isEdit ? 'Listing updated.' : (isDraft ? 'Draft saved. Find it in My Drafts.' : 'Listed on your showcase!'));
       } catch (err) {
         alert('Could not reach the server. Is your PHP backend running?');
       } finally {
@@ -2053,13 +2910,13 @@ setupDropdown(
         item.classList.add('active');
       document.getElementById('saved-sort-value-label').textContent = item.textContent;
       savedSort = item.dataset.value;
-      renderSavedSpots();
+      renderSavedSpots(savedSort === 'nearby');
     });
 
     document.getElementById('showcase-add-card').addEventListener('click', openPostShowcaseModal);
 
     function setTab(tab) {
-      activeTab = ['spots', 'showcase', 'drafts'].includes(tab) ? tab : 'hauls';
+      activeTab = ['spots', 'showcase', 'drafts', 'saved'].includes(tab) ? tab : 'hauls';
       tabsContainer.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.tab === activeTab));
       render();
     }
@@ -2072,26 +2929,75 @@ setupDropdown(
       setTab(btn.dataset.tab);
     });
 
-    // Edit profile — toggles contenteditable fields
+    // Edit profile: name, location and bio become editable; Save posts them to
+    // the server. The @handle is the login name, so it stays read-only.
     const editBtn = document.getElementById('edit-profile-btn');
-    const editableFields = [
-      document.getElementById('profile-name'),
-      document.getElementById('profile-handle'),
-      document.getElementById('profile-location'),
-      document.getElementById('profile-bio')
-    ];
+    const nameEl = document.getElementById('profile-name');
+    const locationEl = document.getElementById('profile-location');
+    const bioEl = document.getElementById('profile-bio');
+    const editableFields = [nameEl, locationEl, bioEl];
     let editing = false;
+    let savingProfile = false;
 
-    editBtn.addEventListener('click', () => {
-      editing = !editing;
-      editableFields.forEach(f => f.setAttribute('contenteditable', editing));
-      editBtn.textContent = editing ? 'Save Profile' : 'Edit Profile';
-      editBtn.classList.toggle('saving', editing);
-      if (editing) editableFields[0].focus();
-    });
+    function setEditing(on) {
+      editing = on;
+      editableFields.forEach(f => f.setAttribute('contenteditable', on));
+      editBtn.textContent = on ? 'Save Profile' : 'Edit Profile';
+      editBtn.classList.toggle('saving', on);
+    }
+    // contenteditable can hold pasted markup/newlines: read plain text, one line
+    function fieldText(el, placeholder) {
+      const t = el.textContent.replace(/\s+/g, ' ').trim();
+      return t === placeholder ? '' : t;
+    }
 
-    document.getElementById('avatar-edit-btn').addEventListener('click', () => {
-      alert('Photo upload flow goes here — hook this up to your file input / storage.');
+    editableFields.forEach(f => f.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); editBtn.click(); }
+      if (e.key === 'Escape') { setEditing(false); fillProfileCard(); }   // cancel
+    }));
+
+    editBtn.addEventListener('click', async () => {
+      if (savingProfile) return;
+      if (!editing) {
+        // empty the "not set" placeholders so there is nothing to delete first
+        if (!currentUser.location) locationEl.textContent = '';
+        if (!currentUser.bio) bioEl.textContent = '';
+        setEditing(true);
+        nameEl.focus();
+        return;
+      }
+
+      const display_name = fieldText(nameEl, '');
+      const location = fieldText(locationEl, LOCATION_PLACEHOLDER);
+      const bio = fieldText(bioEl, BIO_PLACEHOLDER);
+      if (!display_name) { showToast("Your name can't be empty.", 'error'); return; }
+      if (display_name.length > 50) { showToast('Name must be 50 characters or fewer.', 'error'); return; }
+      if (location.length > 60) { showToast('Location must be 60 characters or fewer.', 'error'); return; }
+      if (bio.length > 160) { showToast('Bio must be 160 characters or fewer.', 'error'); return; }
+
+      savingProfile = true;
+      editBtn.disabled = true;
+      try {
+        const res = await apiFetch('api/profile/update.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ display_name, bio, location })
+        });
+        const data = await res.json();
+        if (!data.success) {
+          showToast(data.error || 'Could not save your profile.', 'error');
+          return;   // stay in edit mode so nothing typed is lost
+        }
+        applyLoggedInUser(data.user);   // header avatar + dropdown name
+        fillProfileCard();              // profile card from what the server saved
+        setEditing(false);
+        showToast('Profile saved.');
+      } catch (err) {
+        showToast('Could not reach the server. Try again.', 'error');
+      } finally {
+        savingProfile = false;
+        editBtn.disabled = false;
+      }
     });
 
     document.getElementById('add-item-btn').addEventListener('click', () => {
@@ -2107,6 +3013,7 @@ setupDropdown(
     views['profile'].refreshHauls = () => { if (activeTab === 'hauls') renderHauls(); };
     views['profile'].refreshSavedSpots = () => { if (activeTab === 'spots') renderSavedSpots(); };
     views['profile'].refreshDrafts = () => { if (activeTab === 'drafts') renderDrafts(); };
+    views['profile'].refreshSavedHauls = () => { if (activeTab === 'saved') renderSavedHauls(); };
     views['profile'].refreshStats = loadStats;
 
     // Allow the router to jump straight to a specific tab (used by the

@@ -2,6 +2,7 @@
 .env
 config.php
 api/test-connection.php
+api/config.local.php
 
 # User uploads
 uploads/

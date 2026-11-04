@@ -3,7 +3,7 @@
  * GET /api/stores/list.php
  *
  * Query params (all optional):
- *   search=ukay              — filter by name, case-insensitive partial match
+ *   search=ukay              — filter by name, address or price range, case-insensitive partial match
  *   sort=nearby|rating        — controls ORDER within whatever set of stores
  *                                gets returned; "nearby" needs lat & lng
  *   lat=10.38&lng=123.95      — visitor's current coordinates (from
@@ -25,12 +25,18 @@ $lat    = isset($_GET['lat']) ? (float) $_GET['lat'] : null;
 $lng    = isset($_GET['lng']) ? (float) $_GET['lng'] : null;
 $random = !empty($_GET['random']);
 
-$sql = 'SELECT id, name, latitude, longitude, status_text, rating, rating_count, price_range, address FROM stores';
+$sql = 'SELECT id, name, latitude, longitude, status_text, rating, rating_count, price_range, address, image_path FROM stores';
 $params = [];
 
 if ($search !== '') {
-    $sql .= ' WHERE name LIKE ?';
-    $params[] = '%' . $search . '%';
+    // Match the name, the address/area or the price range ("city, street
+    // market, or budget"). Escape \ % and _ so what the person types is
+    // searched literally instead of acting as LIKE wildcards.
+    $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search) . '%';
+    $sql .= ' WHERE name LIKE ? OR address LIKE ? OR price_range LIKE ?';
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
 }
 
 $stmt = $pdo->prepare($sql);
@@ -44,6 +50,16 @@ if (!empty($_SESSION['user_id'])) {
     $stmt = $pdo->prepare('SELECT store_id FROM saved_spots WHERE user_id = ?');
     $stmt->execute([$_SESSION['user_id']]);
     $savedIds = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+}
+
+// This user's own star ratings, so the Rate modal can pre-fill them
+$myRatings = [];
+if (!empty($_SESSION['user_id'])) {
+    $stmt = $pdo->prepare('SELECT store_id, stars FROM spot_ratings WHERE user_id = ?');
+    $stmt->execute([$_SESSION['user_id']]);
+    foreach ($stmt->fetchAll() as $r) {
+        $myRatings[(int) $r['store_id']] = (int) $r['stars'];
+    }
 }
 
 /**
@@ -65,6 +81,7 @@ function haversineKm(float $lat1, float $lon1, float $lat2, float $lon2): float
 foreach ($stores as &$store) {
     $store['id']            = (int) $store['id'];
     $store['is_saved'] = in_array($store['id'], $savedIds, true);
+    $store['my_rating'] = $myRatings[$store['id']] ?? null;
     $store['rating']        = (float) $store['rating'];
     $store['rating_count']  = (int) $store['rating_count'];
     $store['latitude']      = (float) $store['latitude'];

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=12">
 <title>UkayFinds - Thrift Smarter, Dress Better</title>
 </head>
 <body>
@@ -53,7 +53,7 @@
           <img src="STOCKIMAGES/img3.jpg" alt="Customer sorting through ukay-ukay bins"/>
           <figcaption class="badge-bottom-left">
             <img src="https://api.iconify.design/mdi/star.svg?color=%237c3aed" alt="star" class="badge-icon">
-            <p>4.5 | 150+ Finds Today</p>
+            <p>4.5 | Community-rated spots</p>
           </figcaption>
         </figure>
         <figure>
@@ -113,6 +113,7 @@
         <p>REAL THRIFT HAULS</p>
         <h2>See What Thrifters Are Finding Today.</h2>
         <p>Real photos, price breakdowns, and store tags shared by local thrifters.</p>
+        <p class="sample-note">Sample hauls shown below. Create a free account and share yours in the Community Feed.</p>
       </div>
 
       <div class="haul-grid">
@@ -151,7 +152,7 @@
     <section id="cta-banner">
       <div>
         <h2>Ready to Find Your Next Thrift Gem?</h2>
-        <p>Join hundreds of local thrifters discovering hidden spots daily.</p>
+        <p>Join local thrifters discovering hidden spots near you.</p>
         <a href="#signup" class="open-signup-modal btn-primary">Create Free Account</a>
       </div>
     </section>
@@ -280,7 +281,6 @@
         <ul class="dropdown-links">
           <li><a href="#" data-view="profile" data-tab="spots"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved Spots</a></li>
           <li><a href="#" data-view="profile" data-tab="hauls"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 8h8M8 16h5"/></svg> My Shared Hauls</a></li>
-          <li><a href="#" id="account-settings-link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg> Account Settings</a></li>
         </ul>
         <hr>
         <a href="#" id="logout-btn" class="logout-link">
@@ -324,7 +324,6 @@
                 <div class="dropdown-menu" id="sort-dropdown-menu">
                   <button type="button" class="dropdown-item active" data-value="nearby">Nearby</button>
                   <button type="button" class="dropdown-item" data-value="rating">Top Rated</button>
-                  <button type="button" class="dropdown-item" data-value="budget">On Budget</button>
                 </div>
             </div>
           </div>
@@ -360,6 +359,15 @@
       <div class="feed-hero">
         <h2>Thrift Hauls &amp; Community Feed</h2>
         <p>Discover outfit inspirations, price breakdowns, and local gems shared by thrifters.</p>
+      </div>
+
+      <div class="feed-search" id="feed-search">
+        <input type="search" id="feed-search-input" placeholder="Search people, captions or stores..." autocomplete="off" maxlength="60" aria-label="Search the community feed">
+        <div class="feed-search-dd hidden" id="feed-search-dd"></div>
+      </div>
+      <div class="feed-chip-row hidden" id="feed-chip-row">
+        <span class="feed-chip">Posts by @<span id="feed-chip-name"></span>
+          <button type="button" id="feed-chip-clear" aria-label="Remove filter">&times;</button></span>
       </div>
 
       <div class="filter-pills" id="feed-filter-pills">
@@ -411,6 +419,48 @@
     </main>
   </div>
 
+  <!-- ===================== PUBLIC PROFILE (someone else) ===================== -->
+  <div id="user-profile-view" class="dash-view hidden">
+    <main class="profile-main-container">
+      <button type="button" class="up-back" id="up-back">&larr; Back</button>
+
+      <div class="profile-card">
+        <div class="profile-card-left">
+          <div class="profile-avatar-wrap">
+            <div class="profile-avatar" id="up-avatar">?</div>
+          </div>
+          <div class="profile-info">
+            <h2 id="up-name">&nbsp;</h2>
+            <p class="profile-handle">
+              <span id="up-handle"></span>
+              <span class="dot">&bull;</span>
+              <span id="up-location"></span>
+            </p>
+            <p class="profile-bio" id="up-bio"></p>
+            <p class="profile-stats">
+              <strong id="up-hauls">–</strong> Hauls Shared
+              <span class="dot">&bull;</span>
+              <strong id="up-likes">–</strong> Likes
+              <span class="dot">&bull;</span>
+              <strong id="up-spots">–</strong> Spots Tagged
+              <span class="dot">&bull;</span>
+              Joined <span id="up-joined">–</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-tabs" id="up-tabs">
+        <button type="button" class="pill active" data-tab="hauls">Hauls</button>
+        <button type="button" class="pill" data-tab="spots">Spots they tag</button>
+      </div>
+
+      <div class="profile-masonry" id="up-masonry"><!-- populated by JS --></div>
+      <div class="up-spots hidden" id="up-spots-list"><!-- populated by JS --></div>
+      <p class="no-results hidden" id="up-empty"></p>
+    </main>
+  </div>
+
   <!-- ===================== PROFILE ===================== -->
   <div id="profile-view" class="dash-view hidden">
     <main class="profile-main-container">
@@ -419,9 +469,6 @@
         <div class="profile-card-left">
           <div class="profile-avatar-wrap">
             <div class="profile-avatar">R</div>
-            <button type="button" class="avatar-edit-btn" id="avatar-edit-btn" title="Change photo">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
           </div>
 
           <div class="profile-info">
@@ -516,7 +563,7 @@
       <div class="haul-form-card post-form-card">
         <div class="haul-form-header">
           <div>
-            <h2>Share your Ukay Haul</h2>
+            <h2 id="post-haul-title">Share your Ukay Haul</h2>
             <p>Show off your thrift finds and tag where you found them!</p>
           </div>
           <button type="button" class="haul-form-close" id="post-haul-close" aria-label="Close">&times;</button>
@@ -526,12 +573,12 @@
           <div class="haul-form-section">
             <label for="haul-media-input">Haul Media Upload</label>
             <label class="haul-dropzone" id="haul-dropzone" for="haul-media-input">
-              <input type="file" id="haul-media-input" accept="image/png,image/jpeg,video/mp4" hidden>
+              <input type="file" id="haul-media-input" accept="image/png,image/jpeg" hidden>
               <div class="haul-dropzone-body" id="haul-dropzone-body">
                 <div class="haul-dropzone-icon">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
                 </div>
-                <p class="haul-dropzone-text">Click or drag photos/videos to upload<br><span>(PNG, JPG, MP4)</span></p>
+                <p class="haul-dropzone-text">Click or drag a photo to upload<br><span>(PNG, JPG)</span></p>
               </div>
             </label>
           </div>
@@ -624,6 +671,14 @@
   </div>
 </div>
 
+  <!-- ===================== HAUL DETAIL MODAL ===================== -->
+  <div class="modal-overlay" id="haul-detail-modal" aria-hidden="true">
+    <div class="haul-detail-card" role="dialog" aria-label="Haul details">
+      <button type="button" class="haul-form-close haul-detail-close" id="haul-detail-close" aria-label="Close">&times;</button>
+      <div class="haul-detail-body" id="haul-detail-body"></div>
+    </div>
+  </div>
+
   <!-- ===================== POST TO SHOWCASE MODAL ===================== -->
   <div class="modal-overlay" id="post-showcase-modal" aria-hidden="true">
     <div class="post-modal-shell">
@@ -631,7 +686,7 @@
       <div class="haul-form-card post-form-card">
         <div class="haul-form-header">
           <div>
-            <h2>List on Your Showcase</h2>
+            <h2 id="post-showcase-title">List on Your Showcase</h2>
             <p>Put your ukay find up for bidding, lock, grab, or mine.</p>
           </div>
           <button type="button" class="haul-form-close" id="post-showcase-close" aria-label="Close">&times;</button>
@@ -809,13 +864,13 @@
 
           <div class="haul-form-section">
             <label for="spot-name">Spot Name</label>
-            <input type="text" id="spot-name" placeholder="e.g. Aling Nena's Ukay Corner">
+            <input type="text" id="spot-name" placeholder="e.g. Aling Nena's Ukay Corner" maxlength="100">
           </div>
 
           <div class="haul-form-section">
             <label for="spot-address">Address / Area</label>
             <div class="address-row">
-              <input type="text" id="spot-address" placeholder="e.g. Near Robinsons, Consolacion">
+              <input type="text" id="spot-address" placeholder="e.g. Near Robinsons, Consolacion" maxlength="180">
               <button type="button" class="btn-haul-secondary address-find-btn" id="spot-find-btn">Find on map</button>
             </div>
           </div>
@@ -823,11 +878,11 @@
           <div class="haul-form-row">
             <div class="haul-form-section">
               <label for="spot-hours">Hours (Optional)</label>
-              <input type="text" id="spot-hours" placeholder="e.g. Open until 7 PM">
+              <input type="text" id="spot-hours" placeholder="e.g. Open until 7 PM" maxlength="60">
             </div>
             <div class="haul-form-section">
               <label for="spot-price-range">Price Range</label>
-              <input type="text" id="spot-price-range" placeholder="e.g. ₱50–₱200 Bins">
+              <input type="text" id="spot-price-range" placeholder="e.g. ₱50–₱200 Bins" maxlength="60">
             </div>
           </div>
 
@@ -883,7 +938,7 @@
         <div class="haul-form-section">
           <label>Post As</label>
           <div class="rating-visibility">
-            <label class="visibility-option"><input type="radio" name="rating-visibility" value="username" checked> <span>@remifinds</span></label>
+            <label class="visibility-option"><input type="radio" name="rating-visibility" value="username" checked> <span id="rate-post-as-name">@username</span></label>
             <label class="visibility-option"><input type="radio" name="rating-visibility" value="anonymous"> <span>Anonymous Thrifter</span></label>
           </div>
         </div>
@@ -899,6 +954,6 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="scripts.js"></script>
+<script src="scripts.js?v=20"></script>
 </body>
 </html>
