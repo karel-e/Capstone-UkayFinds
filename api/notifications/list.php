@@ -16,7 +16,7 @@ if (empty($_SESSION['user_id'])) {
 $userId = (int) $_SESSION['user_id'];
 
 $stmt = $pdo->prepare('
-    SELECT n.id, n.type, n.message, n.location_label, n.is_read, n.created_at,
+    SELECT n.id, n.type, n.message, n.location_label, n.is_read, n.created_at, n.target_type, n.target_id,
            u.username AS actor_username
     FROM notifications n
     LEFT JOIN users u ON u.id = n.actor_id

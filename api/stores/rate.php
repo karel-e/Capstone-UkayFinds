@@ -92,7 +92,7 @@ try {
         // Tell the store's submitter (only for new ratings, not edits)
         if ($store['submitted_by']) {
             $stmt = $pdo->prepare(
-                'INSERT INTO notifications (recipient_id, actor_id, type, message, location_label) VALUES (?, ?, ?, ?, ?)'
+                'INSERT INTO notifications (recipient_id, actor_id, type, message, location_label, target_type, target_id) VALUES (?, ?, ?, ?, ?, \'store\', ?)'
             );
             $stmt->execute([
                 $store['submitted_by'],
@@ -100,6 +100,7 @@ try {
                 'rating',
                 "rated your spot {$stars} star" . ($stars > 1 ? 's' : ''),
                 $store['name'],
+                $storeId,
             ]);
         }
     }

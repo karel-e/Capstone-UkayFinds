@@ -14,7 +14,7 @@ if (empty($_SESSION['user_id'])) {
     json_response(['logged_in' => false]);
 }
 
-$stmt = $pdo->prepare('SELECT id, username, email, display_name, bio, location FROM users WHERE id = ?');
+$stmt = $pdo->prepare('SELECT id, username, email, display_name, bio, location, role FROM users WHERE id = ?');
 $stmt->execute([$_SESSION['user_id']]);
 $user = $stmt->fetch();
 

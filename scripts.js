@@ -7,47 +7,47 @@ document.addEventListener('DOMContentLoaded', () => {
   const createCustomPin = () => L.divIcon({
     className: 'custom-leaflet-pin',
     html: `<div style="position:relative;width:32px;height:32px;filter:drop-shadow(0px 3px 6px rgba(0,0,0,0.3));cursor:pointer;">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="#7c3aed" xmlns="http://www.w3.org/2000/svg">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="#C3291D" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
         <circle cx="12" cy="9" r="2.5" fill="#ffffff"/>
       </svg></div>`,
     iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
   });
 
-      function setupDropdown(triggerEl, menuEl, onSelect) {
-      function close() {
-        menuEl.classList.remove('open');
-        triggerEl.classList.remove('open');
-      }
+  function setupDropdown(triggerEl, menuEl, onSelect) {
+    function close() {
+      menuEl.classList.remove('open');
+      triggerEl.classList.remove('open');
+    }
     function toggle(e) {
       e.stopPropagation();
       document.querySelectorAll('.dropdown-menu.open').forEach(m => {
         if (m !== menuEl) { m.classList.remove('open'); m.previousElementSibling?.classList.remove('open'); }
-    });
-    const opening = !menuEl.classList.contains('open');
+      });
+      const opening = !menuEl.classList.contains('open');
       menuEl.classList.toggle('open', opening);
       triggerEl.classList.toggle('open', opening);
     }
-      triggerEl.addEventListener('click', toggle);
-      menuEl.querySelectorAll('.dropdown-item').forEach(item => {
+    triggerEl.addEventListener('click', toggle);
+    menuEl.querySelectorAll('.dropdown-item').forEach(item => {
       item.addEventListener('click', () => {
         onSelect(item);
         close();
+      });
     });
-  });
-  document.addEventListener('click', (e) => {
-    if (!menuEl.contains(e.target) && e.target !== triggerEl) close();
-  });
-  return { close };
-}
+    document.addEventListener('click', (e) => {
+      if (!menuEl.contains(e.target) && e.target !== triggerEl) close();
+    });
+    return { close };
+  }
 
-// Formats large counts the way social apps usually do: 1234 -> "1.2k"
+  // Formats large counts the way social apps usually do: 1234 -> "1.2k"
   function formatStatCount(n) {
     if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     return String(n);
   }
 
-    function escapeHtml(str) {
+  function escapeHtml(str) {
     return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
@@ -76,7 +76,98 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast._timer = setTimeout(() => toast.classList.remove('show'), 3200);
   }
 
-    // Generic version of setHaulPreviewImage — works on any preview container.
+  /* ---- Styled replacements for showAlert() / confirm() / prompt() ----
+     showAlert(message, tone?, title?)  -> Promise, resolves when closed
+     confirmDialog(message, opts?)      -> Promise<boolean>
+     showDialog({...})                  -> the one dialog both are built on */
+  let dialogEl = null, dialogDone = null, dialogReturnFocus = null;
+  function buildDialog() {
+    dialogEl = document.createElement('div');
+    dialogEl.className = 'modal-overlay app-dialog-overlay';
+    dialogEl.setAttribute('aria-hidden', 'true');
+    dialogEl.innerHTML = `
+      <div class="app-dialog" role="alertdialog" aria-modal="true" aria-labelledby="app-dialog-title" aria-describedby="app-dialog-msg">
+        <div class="app-dialog-icon" aria-hidden="true"></div>
+        <h3 id="app-dialog-title"></h3>
+        <p id="app-dialog-msg"></p>
+        <input type="text" class="app-dialog-input" readonly aria-label="Link">
+        <div class="app-dialog-actions">
+          <button type="button" class="btn-secondary app-dialog-cancel"></button>
+          <button type="button" class="btn-primary app-dialog-ok"></button>
+        </div>
+      </div>`;
+    document.body.appendChild(dialogEl);
+    dialogEl.querySelector('.app-dialog-ok').addEventListener('click', () => closeDialog(true));
+    dialogEl.querySelector('.app-dialog-cancel').addEventListener('click', () => closeDialog(false));
+    dialogEl.addEventListener('click', (e) => { if (e.target === dialogEl) closeDialog(false); });
+    // capture phase so Escape closes only this dialog, not the window behind it
+    window.addEventListener('keydown', (e) => {
+      if (!dialogEl.classList.contains('active')) return;
+      if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closeDialog(false); }
+      else if (e.key === 'Tab') {
+        const btns = [...dialogEl.querySelectorAll('button')].filter(b => b.offsetParent !== null);
+        const i = btns.indexOf(document.activeElement);
+        e.preventDefault();
+        btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
+      }
+    }, true);
+  }
+  function closeDialog(result) {
+    if (!dialogEl || !dialogDone) return;
+    const done = dialogDone;
+    dialogDone = null;
+    dialogEl.classList.remove('active');
+    dialogEl.setAttribute('aria-hidden', 'true');
+    if (dialogReturnFocus && document.contains(dialogReturnFocus)) dialogReturnFocus.focus();
+    done(result);
+  }
+  function showDialog({ title = '', message = '', tone = 'info', confirmText = 'OK', cancelText = '', danger = false, input = '' } = {}) {
+    if (!dialogEl) buildDialog();
+    if (dialogDone) closeDialog(false);               // only one dialog at a time
+    const icons = { success: '✓', error: '!', warn: '!', ask: '?', info: 'i' };
+    const icon = dialogEl.querySelector('.app-dialog-icon');
+    icon.textContent = icons[tone] || 'i';
+    dialogEl.querySelector('.app-dialog').className = 'app-dialog tone-' + tone + (danger ? ' danger' : '');
+    dialogEl.querySelector('#app-dialog-title').textContent = title;
+    dialogEl.querySelector('#app-dialog-msg').textContent = message;
+    const inp = dialogEl.querySelector('.app-dialog-input');
+    inp.style.display = input ? 'block' : 'none';
+    inp.value = input || '';
+    const ok = dialogEl.querySelector('.app-dialog-ok');
+    const cancel = dialogEl.querySelector('.app-dialog-cancel');
+    ok.textContent = confirmText;
+    cancel.textContent = cancelText;
+    cancel.style.display = cancelText ? '' : 'none';
+    dialogReturnFocus = document.activeElement;
+    dialogEl.classList.add('active');
+    dialogEl.setAttribute('aria-hidden', 'false');
+    // a question starts on the safe button; an alert starts on OK
+    setTimeout(() => { (danger && cancelText ? cancel : ok).focus(); if (input) { inp.focus(); inp.select(); } }, 30);
+    return new Promise((resolve) => { dialogDone = resolve; });
+  }
+  function showAlert(message, tone, title) {
+    if (!tone) tone = /could not|couldn't|failed|error|expired|reach the server|not support|too large|try again/i.test(String(message)) ? 'error' : 'warn';
+    const titles = { error: 'Something went wrong', warn: 'Hold on', success: 'Done', info: 'Heads up' };
+    return showDialog({ title: title || titles[tone] || 'Heads up', message: String(message), tone });
+  }
+  function confirmDialog(message, opts = {}) {
+    const m = String(message);
+    const danger = opts.danger !== undefined ? opts.danger : /^\s*(delete|remove|decline|cancel the)/i.test(m);
+    const verb = /^\s*delete/i.test(m) ? 'Delete' : /^\s*remove/i.test(m) ? 'Remove' : /^\s*decline/i.test(m) ? 'Decline' : 'Yes, continue';
+    return showDialog({
+      title: opts.title || 'Are you sure?', message: m, tone: 'ask', danger,
+      confirmText: opts.confirmText || verb, cancelText: opts.cancelText || 'Cancel'
+    });
+  }
+
+  // Small badge: admins have checked this stall is real (reviewed = 1), or not yet
+  function verifiedBadge(store) {
+    return store.reviewed === 0
+      ? '<span class="vbadge pending" title="Suggested by a thrifter, waiting for an admin to check it">Unverified</span>'
+      : '<span class="vbadge ok" title="Checked by an admin">\u2713 Verified</span>';
+  }
+
+  // Generic version of setHaulPreviewImage — works on any preview container.
   function setPreviewMedia(container, url) {
     let img = container.querySelector('img');
     let empty = container.querySelector('.post-preview-empty');
@@ -162,22 +253,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ==========================================================================
      2. TOP-LEVEL VIEW ROUTER — landing <-> dashboard, and between the
-        4 dashboard views. Each dashboard view is initialized lazily
+        dashboard views. Each dashboard view is initialized lazily
         (only the first time it's shown), which also fixes Leaflet's
         "map renders blank inside a hidden container" problem.
      ========================================================================== */
   const landingView = document.getElementById('landing-view');
   const dashboardShell = document.getElementById('dashboard-shell');
 
-  // Opens Google Maps directions in a new tab. Uses coordinates when we have
-  // them, otherwise falls back to a search by name + address.
+  /* ---- Ukay Trail (5.7): stamps are collected by tapping "I'm here" at a stall ----
+     The server checks the distance, the one-stamp-per-day rule and trail progress.
+     Nothing here involves payment. */
+  const stampedIds = new Set();      // stalls the person has stamped at least once
+  let trailData = [];                // last answer from api/trail/mine.php
+
+  function refreshStamps() {
+    return apiFetch('api/trail/mine.php').then(r => r.json()).then(d => {
+      if (d && d.success) {
+        stampedIds.clear();
+        (d.stamped_ids || []).forEach(id => stampedIds.add(Number(id)));
+        trailData = d.trails || [];
+      }
+      return d;
+    }).catch(() => null);
+  }
+
+  function checkInAt(store) {
+    if (!navigator.geolocation) { showToast('Your browser cannot share your location.', 'error'); return; }
+    showToast('Checking where you are\u2026');
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        const res = await apiFetch('api/trail/checkin.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ store_id: store.id, lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy })
+        });
+        const data = await res.json();
+        if (!data.success) { showToast(data.error || 'Could not stamp this stall.', 'error'); return; }
+        stampedIds.add(Number(store.id));
+        showToast(data.message);
+        await refreshStamps();
+        if (views['find-a-store'].inited && views['find-a-store'].refreshCards) views['find-a-store'].refreshCards();
+        if (data.completed && data.completed.length) {
+          showToast('You finished the ' + data.completed[0].name + '! Your reward code is ' + data.completed[0].code + '.');
+          switchView('trail');
+        } else if (views['trail'].inited && views['trail'].reload) {
+          views['trail'].reload();
+        }
+      } catch (err) {
+        showToast('Could not reach the server. Try again.', 'error');
+      }
+    }, () => showToast('We could not get your location. Allow location for this site and try again.', 'error'),
+    { enableHighAccuracy: true, timeout: 10000 });
+  }
+
+  // Get Directions stays on this site: it opens the stall on the Find a Stall
+  // map and draws the route from the visitor's position (see showRoute in
+  // initFindAStore). Used by the Saved Stalls list in Profile too.
   function openDirections(place) {
-    const lat = Number(place.latitude), lng = Number(place.longitude);
-    const hasCoords = place.latitude != null && place.longitude != null && isFinite(lat) && isFinite(lng);
-    const url = hasCoords
-      ? 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(lat + ',' + lng)
-      : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([place.name, place.address].filter(Boolean).join(' '));
-    window.open(url, '_blank', 'noopener');
+    switchView('find-a-store');
+    const finder = views['find-a-store'];
+    if (finder.directionsTo) finder.directionsTo(place);
+  }
+
+  // 5.12: remember where the visitor was (only after the browser's own
+  // location prompt was allowed), so we can tell them about new stalls near
+  // them. Rounded on the server; at most once every 10 minutes.
+  let lastLocationSave = 0;
+  function saveMyLocation(lat, lng) {
+    if (!currentUser || Date.now() - lastLocationSave < 10 * 60 * 1000) return;
+    lastLocationSave = Date.now();
+    apiFetch('api/profile/location.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng })
+    }).catch(() => {});
   }
 
   // The visitor's position, shared by every view (Feed "Near Me", Saved Spots
@@ -260,12 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
       await navigator.clipboard.writeText(url);
       showToast('Link copied.');
     } catch (err) {
-      window.prompt('Copy this link:', url);
+      await showDialog({ title: 'Copy this link', message: 'Your browser blocked copying, so copy it from here:', input: url, confirmText: 'Done' });
     }
   }
 
   async function deleteHaulById(id) {
-    if (!confirm('Delete this haul? This can\'t be undone.')) return;
+    if (!(await confirmDialog('Delete this haul? This can\'t be undone.'))) return;
     try {
       const res = await apiFetch('api/hauls/delete.php', {
         method: 'POST',
@@ -288,6 +437,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // The Edit/Delete buttons are only a convenience: the server re-checks
   // ownership in update.php and delete.php.
+  /* ---- Report a haul or a comment (the admin reviews these) ---- */
+  const reportModal = document.getElementById('report-modal');
+  let reportTarget = null;   // { type: 'haul' | 'comment', id }
+
+  function openReport(type, id) {
+    reportTarget = { type, id };
+    document.getElementById('report-title').textContent = type === 'comment' ? 'Report this comment' : 'Report this haul';
+    reportModal.querySelector('input[name="report-reason"][value="spam"]').checked = true;
+    setModalOpen(reportModal, true);
+  }
+  function closeReport() { setModalOpen(reportModal, false); reportTarget = null; }
+  document.getElementById('report-close').addEventListener('click', closeReport);
+  document.getElementById('report-cancel').addEventListener('click', closeReport);
+  reportModal.addEventListener('click', (e) => { if (e.target === reportModal) closeReport(); });
+  document.getElementById('report-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!reportTarget) return;
+    const reason = reportModal.querySelector('input[name="report-reason"]:checked').value;
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      const res = await apiFetch('api/reports/submit.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_type: reportTarget.type, target_id: reportTarget.id, reason })
+      });
+      const data = await res.json();
+      showToast(data.success ? (data.message || 'Thanks. An admin will take a look.') : (data.error || 'Could not send the report.'),
+                data.success ? 'success' : 'error');
+      if (data.success || res.status === 409) closeReport();
+    } catch (err) {
+      showToast('Could not reach the server. Try again.', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   function buildHaulMenu(h) {
     const mine = !!currentUser && h.username === currentUser.username;
     const wrap = document.createElement('div');
@@ -298,6 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <button type="button" role="menuitem" data-action="share">Share</button>
         <button type="button" role="menuitem" data-action="save">${savedHaulIds.has(Number(h.id)) ? 'Unsave item' : 'Save item'}</button>
         ${mine ? '<button type="button" role="menuitem" data-action="edit">Edit</button><button type="button" role="menuitem" data-action="delete" class="danger">Delete</button>' : ''}
+        ${!mine && currentUser ? '<button type="button" role="menuitem" data-action="report" class="danger">Report</button>' : ''}
       </div>`;
     const btn = wrap.querySelector('.haul-menu-btn');
     btn.addEventListener('click', (e) => {
@@ -324,6 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       else if (action === 'edit') openHaulEdit(h);
       else if (action === 'delete') deleteHaulById(h.id);
+      else if (action === 'report') openReport('haul', h.id);
     });
     return wrap;
   }
@@ -343,6 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <p><button type="button" class="user-link" data-username="${escapeHtml(c.username)}">@${escapeHtml(c.username)}</button> <span>${escapeHtml(formatTimeAgo(c.created_at))}</span></p>
         <p class="haul-comment-body">${escapeHtml(c.body)}</p>
         ${c.is_mine ? '<button type="button" class="haul-comment-delete" aria-label="Delete your comment">Delete</button>' : ''}
+        ${!c.is_mine && currentUser ? '<button type="button" class="haul-comment-report" aria-label="Report this comment">Report</button>' : ''}
       </div>`;
   }
 
@@ -397,10 +586,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     listEl.addEventListener('click', async (e) => {
+      const reportBtn = e.target.closest('.haul-comment-report');
+      if (reportBtn) { openReport('comment', Number(reportBtn.closest('.haul-comment').dataset.id)); return; }
       const btn = e.target.closest('.haul-comment-delete');
       if (!btn) return;
       const id = Number(btn.closest('.haul-comment').dataset.id);
-      if (!confirm('Delete your comment?')) return;
+      if (!(await confirmDialog('Delete your comment?'))) return;
       try {
         const res = await apiFetch('api/comments/delete.php', {
           method: 'POST',
@@ -498,6 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
       navigator.geolocation.getCurrentPosition(
         pos => {
           sharedCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          saveMyLocation(sharedCoords.lat, sharedCoords.lng);
           resolve(sharedCoords);
         },
         () => resolve(null),
@@ -517,7 +709,12 @@ document.addEventListener('DOMContentLoaded', () => {
     'community-feed': { el: document.getElementById('community-feed-view'), init: initCommunityFeed, inited: false, onShow: null },
     'notifications':  { el: document.getElementById('notifications-view'),  init: initNotifications, inited: false, onShow: null },
     'profile':        { el: document.getElementById('profile-view'),        init: initProfile,       inited: false, onShow: null },
-    'user-profile':   { el: document.getElementById('user-profile-view'),   init: initUserProfile,   inited: false, onShow: null }
+    'user-profile':   { el: document.getElementById('user-profile-view'),   init: initUserProfile,   inited: false, onShow: null },
+    // --- new layout views ---
+    'trail':          { el: document.getElementById('trail-view'),          init: initTrail,         inited: false, onShow: null },
+    'fresh-bale':     { el: document.getElementById('fresh-bale-view'),     init: initFreshBale,     inited: false, onShow: null },
+    'seller':         { el: document.getElementById('seller-view'),         init: initSeller,        inited: false, onShow: null },
+    'admin':          { el: document.getElementById('admin-view'),          init: initAdmin,         inited: false, onShow: null }
   };
 
   let currentViewName = null;
@@ -529,6 +726,8 @@ document.addEventListener('DOMContentLoaded', () => {
       views[currentViewName].onHide();
     }
     currentViewName = name;
+    // The admin screen gets its own plain header (no shopper links), like the layout
+    document.getElementById('dashboard-shell').classList.toggle('admin-mode', name === 'admin');
     Object.keys(views).forEach(key => views[key].el.classList.toggle('hidden', key !== name));
     document.querySelectorAll('.nav-link[data-view]').forEach(a => {
       a.classList.toggle('active', a.dataset.view === name);
@@ -572,16 +771,61 @@ document.addEventListener('DOMContentLoaded', () => {
   }, true);
 
   function showDashboard(name, opts) {
+    legalView.classList.add('hidden');
     landingView.classList.add('hidden');
     dashboardShell.classList.remove('hidden');
     switchView(name || 'find-a-store', opts);
   }
 
   function showLanding() {
+    legalView.classList.add('hidden');
     dashboardShell.classList.add('hidden');
     landingView.classList.remove('hidden');
     window.scrollTo(0, 0);
-  }    
+  }
+
+  /* ---- Privacy Policy / Terms of Service: open with #privacy or #terms ----
+     They live inside this page so they share the site's styles. The Back button
+     and the browser's own back both return to wherever the person was. */
+  const legalView = document.getElementById('legal-view');
+  const LEGAL_TITLES = { privacy: 'Privacy Policy', terms: 'Terms of Service' };
+  let legalReturnTo = null;      // 'landing' | 'dashboard'
+  let pageTitleBeforeLegal = document.title;
+
+  function openLegal(which) {
+    if (!legalReturnTo) {
+      legalReturnTo = dashboardShell.classList.contains('hidden') ? 'landing' : 'dashboard';
+      pageTitleBeforeLegal = document.title;
+    }
+    landingView.classList.add('hidden');
+    dashboardShell.classList.add('hidden');
+    legalView.classList.remove('hidden');
+    legalView.querySelectorAll('[data-legal]').forEach(s => s.classList.toggle('hidden', s.dataset.legal !== which));
+    document.title = LEGAL_TITLES[which] + ' - UkayFinds';
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }
+
+  function closeLegal() {
+    if (!legalReturnTo) return;
+    legalView.classList.add('hidden');
+    (legalReturnTo === 'dashboard' ? dashboardShell : landingView).classList.remove('hidden');
+    legalReturnTo = null;
+    document.title = pageTitleBeforeLegal;
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }
+
+  function syncLegalWithHash() {
+    const m = /^#(privacy|terms)$/.exec(location.hash);
+    if (m) openLegal(m[1]); else closeLegal();
+  }
+
+  window.addEventListener('hashchange', syncLegalWithHash);
+  document.getElementById('legal-back').addEventListener('click', (e) => {
+    e.preventDefault();
+    history.replaceState(null, '', location.pathname + location.search);
+    closeLegal();
+  });
+  syncLegalWithHash();   // opened straight from a link like landing.html#terms
   // One place that handles "your session is gone". Every logged-in API call
   // goes through this instead of plain fetch().
   let sessionEnding = false;
@@ -590,7 +834,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (res.status === 401 && currentUser && !sessionEnding) {
       sessionEnding = true;
       currentUser = null;
-      alert('Your session expired. Please sign in again.');
+      await showAlert('Your session expired. Please sign in again.', 'info', 'Session expired');
       location.reload(); // clears state and timers, and me.php sends us to the landing page
     }
     return res;
@@ -725,6 +969,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('user-avatar-btn').textContent = label.charAt(0).toUpperCase();
     const dropdownAvatar = document.querySelector('.dropdown-avatar');
     if (dropdownAvatar) dropdownAvatar.textContent = label.charAt(0).toUpperCase();
+    // The Admin dashboard link is only shown to admins (needs a "role" field from api/auth/me.php)
+    const adminItem = document.getElementById('admin-link-item');
+    if (adminItem) adminItem.classList.toggle('hidden', user.role !== 'admin');
   }
 
   signupForm.addEventListener('submit', async (e) => {
@@ -735,12 +982,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const email = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
     const confirmPassword = document.getElementById('signup-confirm').value;
+    const acceptTerms = document.getElementById('signup-terms').checked;
+
+    if (!acceptTerms) {
+      showFormError(signupError, 'Please agree to the Terms of Service and Privacy Policy to create an account.');
+      return;
+    }
 
     try {
       const res = await fetch('api/auth/register.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password, confirm_password: confirmPassword })
+        body: JSON.stringify({ username, email, password, confirm_password: confirmPassword, accept_terms: true })
       });
       const data = await res.json();
 
@@ -796,7 +1049,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ==========================================================================
      5. SHARED AVATAR DROPDOWN + LOGOUT
-        One instance now (the header lives outside the 4 switchable views),
+        One instance now (the header lives outside the switchable views),
         so this replaces what used to be 4 separate copies of the same code.
      ========================================================================== */
   const avatarBtn = document.getElementById('user-avatar-btn');
@@ -826,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ==========================================================================
-     5b. SESSION CHECK ON LOAD
+     5a. SESSION CHECK ON LOAD
         Ask the server "am I already logged in?" so refreshing the page
         doesn't silently dump a logged-in user back onto the landing view —
         this is the whole reason me.php exists.
@@ -847,13 +1100,13 @@ document.addEventListener('DOMContentLoaded', () => {
   })();
 
   /* ==========================================================================
-     5b. POST HAUL MODAL (dashboard-only, shared)
-        Reachable from Community Feed's "+" AND Profile's "+" — defined here
-        at the top level (like the modal above) rather than inside either
-        view's init function, since posting a haul needs to refresh
-        whichever views (Community Feed, Profile) have already been visited.
+     5b. POST HAUL PAGE (dashboard-only, shared)
+        Now a full page (#post-haul-view) instead of a modal. It is still reachable
+        from Community Feed's "+", Profile's "+" and "Continue" on a draft, so it
+        lives here at the top level (not inside one view's init function).
+        Function names (openPostHaulModal, closePostHaulModal, openHaulDraft,
+        openHaulEdit ...) are kept so the rest of scripts.js keeps working.
      ========================================================================== */
-  const postHaulModal = document.getElementById('post-haul-modal');
   const postHaulForm = document.getElementById('post-haul-form');
   const haulMediaInput = document.getElementById('haul-media-input');
   const haulDropzone = document.getElementById('haul-dropzone');
@@ -861,8 +1114,19 @@ document.addEventListener('DOMContentLoaded', () => {
   let editingHaulDraftId = null;     // set while continuing a draft
   let editingHaulDraftImage = null;  // that draft's existing photo path, if any
   let editingHaulId = null;          // set while editing an already-published haul
+  let postHaulReturnView = 'community-feed';   // where Back / a successful post goes
 
-    // ---- Specific Details popout ----
+  // Register the page with the view router (switchView hides/shows it like the others)
+  views['post-haul'] = {
+    el: document.getElementById('post-haul-view'),
+    init: () => {},
+    inited: false,
+    onShow: null,
+    // Leaving the page mid-edit must not leave a half-edited draft in the "new haul" form
+    onHide: () => { if (editingHaulDraftId !== null || editingHaulId !== null) resetHaulForm(); }
+  };
+
+  // ---- Specific Details popout (open by default on the page) ----
   const haulDetailsToggle = document.getElementById('haul-specific-details-toggle');
   const haulDetailsPanel = document.getElementById('haul-specific-details-panel');
   haulDetailsToggle.addEventListener('click', () => {
@@ -871,18 +1135,91 @@ document.addEventListener('DOMContentLoaded', () => {
     haulDetailsToggle.classList.toggle('open', opening);
   });
 
-  // ---- Size dropdown ----
-  let selectedHaulSize = '';
+  // ---- Size dropdown: XXXS … XXXL, then Free size / Not specified / Other… ----
+  const KNOWN_HAUL_SIZES = ['XXXS', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'Free size', 'One Size'];  // 'One Size' kept so older hauls still load
+  const haulSizeMenu = document.getElementById('haul-size-dropdown-menu');
+  const haulSizeLabel = document.getElementById('haul-size-label');
+  const haulSizeOther = document.getElementById('haul-size-other');
+  let selectedHaulSize = '';   // '' (not specified) | a known size | '__other'
+
+  function paintHaulSize(value, labelText) {
+    selectedHaulSize = value;
+    haulSizeLabel.textContent = labelText;
+    haulSizeMenu.querySelectorAll('.dropdown-item').forEach(i =>
+      i.classList.toggle('active', i.dataset.value === value && labelText !== 'Select size'));
+    document.getElementById('haul-size-other-row').classList.toggle('hidden', value !== '__other');
+  }
   setupDropdown(
     document.getElementById('haul-size-dropdown-btn'),
-    document.getElementById('haul-size-dropdown-menu'),
+    haulSizeMenu,
     (item) => {
-      document.querySelectorAll('#haul-size-dropdown-menu .dropdown-item').forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-      selectedHaulSize = item.dataset.value;
-      document.getElementById('haul-size-label').textContent = item.textContent;
+      paintHaulSize(item.dataset.value, item.dataset.value === '__other' ? 'Other' : item.textContent);
+      if (item.dataset.value === '__other') haulSizeOther.focus();
+      updateHaulPreview();
     }
   );
+  haulSizeOther.addEventListener('input', updateHaulPreview);
+
+  // The size string the server stores ('' when not specified)
+  function currentHaulSize() {
+    return selectedHaulSize === '__other' ? haulSizeOther.value.trim() : selectedHaulSize;
+  }
+  // Used when loading a draft / published haul back into the form
+  function setHaulSizeFromValue(value) {
+    haulSizeOther.value = '';
+    if (!value) { paintHaulSize('', 'Select size'); return; }
+    if (KNOWN_HAUL_SIZES.includes(value)) { paintHaulSize(value, value); return; }
+    paintHaulSize('__other', 'Other');
+    haulSizeOther.value = value;
+  }
+
+  // ---- Measurements: H × W × L with an in / cm switch ----
+  const measureEls = {
+    h: document.getElementById('haul-measure-h'),
+    w: document.getElementById('haul-measure-w'),
+    l: document.getElementById('haul-measure-l')
+  };
+  const unitButtons = document.querySelectorAll('#haul-unit-toggle .unit-btn');
+  const measureHint = document.getElementById('haul-measure-hint');
+  const MEASURE_HINT_DEFAULT = '';   // the box subtitle already explains H × W × L
+  let haulUnit = 'in';
+
+  const roundOne = n => Math.round(n * 10) / 10;
+  const convertMeasure = (n, from, to) => (from === to ? n : roundOne(from === 'in' ? n * 2.54 : n / 2.54));
+  function readMeasure(el) {
+    const v = parseFloat(el.value);
+    return isNaN(v) || v < 0 ? null : v;
+  }
+  // "H 20 × W 15 × L 30 in" — only the sides that were filled in
+  function measureText(unit) {
+    const parts = [['H', 'h'], ['W', 'w'], ['L', 'l']]
+      .map(([label, key]) => {
+        const v = readMeasure(measureEls[key]);
+        return v === null ? null : label + ' ' + convertMeasure(v, haulUnit, unit);
+      })
+      .filter(Boolean);
+    return parts.length ? parts.join(' × ') + ' ' + unit : '';
+  }
+  function updateMeasureHint() {
+    const other = haulUnit === 'in' ? 'cm' : 'in';
+    const converted = measureText(other);
+    measureHint.textContent = converted ? '≈ ' + converted : MEASURE_HINT_DEFAULT;
+  }
+  function setHaulUnit(unit, convertValues) {
+    if (convertValues && unit !== haulUnit) {
+      Object.values(measureEls).forEach(el => {
+        const v = readMeasure(el);
+        if (v !== null) el.value = convertMeasure(v, haulUnit, unit);
+      });
+    }
+    haulUnit = unit;
+    unitButtons.forEach(b => b.classList.toggle('active', b.dataset.unit === unit));
+    document.querySelectorAll('#haul-specific-details-panel .measure-unit').forEach(s => { s.textContent = unit; });
+    updateMeasureHint();
+    updateHaulPreview();
+  }
+  unitButtons.forEach(b => b.addEventListener('click', () => setHaulUnit(b.dataset.unit, true)));
+  Object.values(measureEls).forEach(el => el.addEventListener('input', () => { updateMeasureHint(); updateHaulPreview(); }));
 
   // ---- Live preview ----
   const haulPreviewMedia = document.getElementById('haul-preview-media');
@@ -891,6 +1228,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const haulPreviewCaption = document.getElementById('haul-preview-caption');
   const haulPreviewLocation = document.getElementById('haul-preview-location');
   const haulPreviewLocationText = document.getElementById('haul-preview-location-text');
+  const haulPreviewChips = document.getElementById('haul-preview-chips');
 
   function updateHaulPreviewLocation() {
     if (selectedHaulLocation) {
@@ -907,6 +1245,18 @@ document.addEventListener('DOMContentLoaded', () => {
     haulPreviewCaption.textContent = caption || 'Your caption will show up here...';
     haulPreviewPrice.textContent = price ? `₱${price}` : '';
     haulPreviewUsername.textContent = currentUser ? '@' + currentUser.username : '@username';
+
+    // size / color / fabric / measurements as small chips under the photo
+    const chips = [];
+    const size = currentHaulSize();
+    if (size) chips.push('Size ' + size);
+    const color = document.getElementById('haul-color').value.trim();
+    const fabric = document.getElementById('haul-fabric').value.trim();
+    if (color) chips.push(color);
+    if (fabric) chips.push(fabric);
+    const m = measureText(haulUnit);
+    if (m) chips.push(m);
+    haulPreviewChips.innerHTML = chips.map(c => `<span class="post-preview-chip">${escapeHtml(c)}</span>`).join('');
   }
 
   function setHaulPreviewImage(url) {
@@ -932,28 +1282,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  document.getElementById('haul-caption').addEventListener('input', updateHaulPreview);
-  document.getElementById('haul-amount').addEventListener('input', updateHaulPreview);
+  ['haul-caption', 'haul-amount', 'haul-color', 'haul-fabric'].forEach(id =>
+    document.getElementById(id).addEventListener('input', updateHaulPreview));
 
-  // Populate "Tag Thrift Spot" from the same store data Find A Store uses.
-let selectedHaulLocation = '';   // spot name, for the label and preview
-let selectedHaulStoreId = '';   // spot id, what the server saves
-const haulLocationMenu = document.getElementById('haul-location-dropdown-menu');
-const haulLocationBtn = document.getElementById('haul-location-dropdown-btn');
-setupDropdown(haulLocationBtn, haulLocationMenu, () => {});
-// The menu items are rebuilt each time the modal opens, so listen on the menu itself
-haulLocationMenu.addEventListener('click', (e) => {
-  const item = e.target.closest('.dropdown-item');
-  if (!item || item.disabled) return;
-  haulLocationMenu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
-  item.classList.add('active');
-  selectedHaulStoreId = item.dataset.value;
-  selectedHaulLocation = item.textContent;
-  document.getElementById('haul-location-label').textContent = item.textContent;
-  updateHaulPreviewLocation();
-  haulLocationMenu.classList.remove('open');
-  haulLocationBtn.classList.remove('open');
-});
+  // Populate "Tag Thrift Spot" from the live spot list.
+  let selectedHaulLocation = '';   // spot name, for the label and preview
+  let selectedHaulStoreId = '';    // spot id, what the server saves
+  const haulLocationMenu = document.getElementById('haul-location-dropdown-menu');
+  const haulLocationBtn = document.getElementById('haul-location-dropdown-btn');
+  setupDropdown(haulLocationBtn, haulLocationMenu, () => {});
+  // The menu items are rebuilt each time the page opens, so listen on the menu itself
+  haulLocationMenu.addEventListener('click', (e) => {
+    const item = e.target.closest('.dropdown-item');
+    if (!item || item.disabled) return;
+    haulLocationMenu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    selectedHaulStoreId = item.dataset.value;
+    selectedHaulLocation = item.textContent;
+    document.getElementById('haul-location-label').textContent = item.textContent;
+    updateHaulPreviewLocation();
+    haulLocationMenu.classList.remove('open');
+    haulLocationBtn.classList.remove('open');
+  });
 
   function resetHaulDropzone() {
     haulMediaInput.value = '';
@@ -964,7 +1314,7 @@ haulLocationMenu.addEventListener('click', (e) => {
       <p class="haul-dropzone-text">Click or drag a photo to upload<br><span>(PNG, JPG)</span></p>`;
   }
 
-    function previewHaulFile(file) {
+  function previewHaulFile(file) {
     if (!file) return;
     if (file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file);
@@ -1000,11 +1350,10 @@ haulLocationMenu.addEventListener('click', (e) => {
     selectedHaulStoreId = '';
     document.getElementById('haul-location-label').textContent = 'Select Location';
     haulLocationMenu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
-    selectedHaulSize = '';
-    document.getElementById('haul-size-label').textContent = 'Select size';
-    document.querySelectorAll('#haul-size-dropdown-menu .dropdown-item').forEach(i => i.classList.remove('active'));
-    haulDetailsPanel.classList.remove('open');
-    haulDetailsToggle.classList.remove('open');
+    setHaulSizeFromValue('');
+    setHaulUnit('in', false);
+    haulDetailsPanel.classList.add('open');
+    haulDetailsToggle.classList.add('open');
     editingHaulDraftId = null;
     editingHaulDraftImage = null;
     editingHaulId = null;
@@ -1021,53 +1370,112 @@ haulLocationMenu.addEventListener('click', (e) => {
     document.getElementById('post-haul-title').textContent = on ? 'Edit your Haul' : 'Share your Ukay Haul';
   }
 
+  /* ---- My Drafts list on the page (haul drafts only) ---- */
+  const postDraftsList = document.getElementById('post-drafts-list');
+  const postDraftsCount = document.getElementById('post-drafts-count');
+  const postNoDrafts = document.getElementById('post-no-drafts');
+
+  async function renderPostHaulDrafts() {
+    try {
+      const res = await apiFetch('api/drafts/list.php');
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed to load drafts.');
+      const drafts = (data.hauls || []).slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+      postDraftsCount.textContent = drafts.length;
+      postNoDrafts.classList.toggle('hidden', drafts.length > 0);
+      postDraftsList.innerHTML = '';
+
+      drafts.forEach(d => {
+        const thumb = d.image_path
+          ? `<img class="draft-thumb" src="${escapeHtml(d.image_path)}" alt="">`
+          : `<div class="draft-thumb"></div>`;
+        const card = document.createElement('div');
+        card.className = 'draft-card';
+        card.innerHTML = `
+          ${thumb}
+          <div class="draft-info">
+            <span class="draft-type">Haul draft</span>
+            <p class="draft-title${d.item_name ? '' : ' untitled'}">${d.item_name ? escapeHtml(d.item_name) : 'Untitled draft'}</p>
+            <p class="draft-meta">Saved ${formatTimeAgo(d.created_at)}</p>
+          </div>
+          <div class="draft-actions">
+            <button type="button" class="draft-btn primary" data-action="edit">Continue</button>
+            <button type="button" class="draft-btn danger" data-action="delete">Delete</button>
+          </div>`;
+        card.querySelector('[data-action="edit"]').addEventListener('click', () => {
+          openHaulDraft(d);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        card.querySelector('[data-action="delete"]').addEventListener('click', async () => {
+          if (!(await confirmDialog('Delete this draft? This can\'t be undone.'))) return;
+          try {
+            const r = await apiFetch('api/drafts/delete.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ type: 'haul', id: d.id })
+            });
+            const out = await r.json();
+            if (!out.success) { showToast(out.error || 'Could not delete that draft.', 'error'); return; }
+            if (editingHaulDraftId === d.id) resetHaulForm();
+            renderPostHaulDrafts();
+            if (views['profile'].inited && views['profile'].refreshDrafts) views['profile'].refreshDrafts();
+          } catch (err) {
+            showToast('Could not reach the server. Try again.', 'error');
+          }
+        });
+        postDraftsList.appendChild(card);
+      });
+    } catch (err) {
+      postDraftsList.innerHTML = '<p class="no-results">Could not load your drafts.</p>';
+    }
+  }
+
   function openPostHaulModal() {
+    // remember where we came from so Back / a successful post returns there
+    if (currentViewName && currentViewName !== 'post-haul') postHaulReturnView = currentViewName;
     updateHaulPreview();   // shows the real @username as soon as it opens
-    setModalOpen(postHaulModal, true);
+    switchView('post-haul');
+    renderPostHaulDrafts();
     // Refresh the spot list so a spot suggested a minute ago can be tagged
     loadSpotChoices().then(() => fillSpotMenu(haulLocationMenu, selectedHaulStoreId));
   }
   function closePostHaulModal() {
-    setModalOpen(postHaulModal, false);
     // Don't leave a half-edited draft sitting in the "new haul" form
     if (editingHaulDraftId !== null || editingHaulId !== null) resetHaulForm();
+    switchView(postHaulReturnView || 'community-feed');
   }
 
   document.getElementById('post-haul-close').addEventListener('click', closePostHaulModal);
-  postHaulModal.addEventListener('click', (e) => { if (e.target === postHaulModal) closePostHaulModal(); });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && postHaulModal.classList.contains('active')) closePostHaulModal();
-  });
 
   function openHaulDraft(d) {
     resetHaulForm();
     editingHaulDraftId = d.id;
     editingHaulDraftImage = d.image_path || null;
     document.getElementById('haul-caption').value = d.item_name || '';
-    document.getElementById('haul-amount').value = d.price !== null ? d.price : '';
+    document.getElementById('haul-amount').value = d.price !== null && d.price !== undefined ? d.price : '';
     selectedHaulStoreId = d.store_id ? String(d.store_id) : '';
     selectedHaulLocation = d.store_name || '';
     document.getElementById('haul-location-label').textContent = d.store_name || 'Select Location';
     updateHaulPreviewLocation();
-    
+
     if (d.image_path) {
       haulDropzoneBody.innerHTML = `<img class="haul-dropzone-preview" src="${escapeHtml(d.image_path)}" alt="Current photo"><span class="haul-dropzone-filename">Current photo (choose a file to replace it)</span>`;
     }
     setHaulPreviewImage(d.image_path || null);
-    updateHaulPreview();
-    
-    if (d.size) {
-      selectedHaulSize = d.size;
-      document.getElementById('haul-size-label').textContent = d.size;
-      document.querySelectorAll('#haul-size-dropdown-menu .dropdown-item').forEach(i => i.classList.toggle('active', i.dataset.value === d.size));
-    }
+
+    setHaulSizeFromValue(d.size || '');
     document.getElementById('haul-color').value = d.color || '';
     document.getElementById('haul-fabric').value = d.fabric || '';
-    if (d.size || d.color || d.fabric) {
-      haulDetailsPanel.classList.add('open');
-      haulDetailsToggle.classList.add('open');
-    }
 
+    // measurements (the API returns these once create/update/list are updated)
+    setHaulUnit(d.measure_unit === 'cm' ? 'cm' : 'in', false);
+    measureEls.h.value = d.measure_h !== null && d.measure_h !== undefined ? d.measure_h : '';
+    measureEls.w.value = d.measure_w !== null && d.measure_w !== undefined ? d.measure_w : '';
+    measureEls.l.value = d.measure_l !== null && d.measure_l !== undefined ? d.measure_l : '';
+    updateMeasureHint();
+
+    updateHaulPreview();
     openPostHaulModal();
   }
 
@@ -1090,8 +1498,20 @@ haulLocationMenu.addEventListener('click', (e) => {
       return;
     }
     if (!isDraft && !caption) {
-      alert('Add a caption for your haul before posting.');
+      showAlert('Add a caption for your haul before posting.');
       return;
+    }
+    if (selectedHaulSize === '__other' && !haulSizeOther.value.trim()) {
+      showToast('Type the size, or pick "Not specified".', 'error');
+      haulSizeOther.focus();
+      return;
+    }
+    for (const key of ['h', 'w', 'l']) {
+      if (measureEls[key].value !== '' && readMeasure(measureEls[key]) === null) {
+        showToast('Measurements must be positive numbers.', 'error');
+        measureEls[key].focus();
+        return;
+      }
     }
 
     const amountInput = document.getElementById('haul-amount').value;
@@ -1100,9 +1520,14 @@ haulLocationMenu.addEventListener('click', (e) => {
     formData.append('item_name', caption);
     if (amountInput) formData.append('price', amountInput);
     formData.append('store_id', selectedHaulStoreId || '');
-    formData.append('size', selectedHaulSize || '');
+    formData.append('size', currentHaulSize());
     formData.append('color', document.getElementById('haul-color').value.trim());
     formData.append('fabric', document.getElementById('haul-fabric').value.trim());
+    // measurements: sent exactly as typed, with the unit they were typed in
+    formData.append('measure_unit', haulUnit);
+    formData.append('measure_h', measureEls.h.value);
+    formData.append('measure_w', measureEls.w.value);
+    formData.append('measure_l', measureEls.l.value);
     if (editingHaulDraftId !== null) formData.append('draft_id', editingHaulDraftId);
     if (isEdit) formData.append('haul_id', editingHaulId);
     if (haulMediaInput.files[0]) formData.append('image', haulMediaInput.files[0]);
@@ -1115,7 +1540,7 @@ haulLocationMenu.addEventListener('click', (e) => {
       const data = await res.json();
 
       if (!data.success) {
-        alert(data.error || (isEdit ? 'Could not save your changes.' : (isDraft ? 'Could not save your draft.' : 'Could not post your haul.')));
+        showAlert(data.error || (isEdit ? 'Could not save your changes.' : (isDraft ? 'Could not save your draft.' : 'Could not post your haul.')), 'error');
         return;
       }
 
@@ -1129,10 +1554,16 @@ haulLocationMenu.addEventListener('click', (e) => {
       }
 
       resetHaulForm();
-      closePostHaulModal();
-      showToast(isEdit ? 'Haul updated.' : (isDraft ? 'Draft saved. Find it in Profile → My Drafts.' : 'Haul posted!'));
+      if (isDraft) {
+        // Stay on the page so the new draft shows up in "My Drafts"
+        renderPostHaulDrafts();
+        showToast('Draft saved.');
+      } else {
+        closePostHaulModal();   // back to where the person came from
+        showToast(isEdit ? 'Haul updated.' : 'Haul posted!');
+      }
     } catch (err) {
-      alert('Could not reach the server. Is your PHP backend running?');
+      showAlert('Could not reach the server. Is your PHP backend running?');
     } finally {
       actionBtns.forEach(b => b.disabled = false);
     }
@@ -1210,13 +1641,14 @@ haulLocationMenu.addEventListener('click', (e) => {
         (pos) => {
           userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           sharedCoords = userCoords;
+          saveMyLocation(userCoords.lat, userCoords.lng);
           setUserMarker(userCoords.lat, userCoords.lng);
           map.flyTo([userCoords.lat, userCoords.lng], 15, { duration: 0.8 });
           loadStores();
         },
         () => {
           if (notifyOnFailure) {
-            alert('Could not get your location. Check that location access is allowed for this site in your browser settings.');
+            showAlert('Could not get your location. Check that location access is allowed for this site in your browser settings.');
           }
           loadStores();
         },
@@ -1226,7 +1658,7 @@ haulLocationMenu.addEventListener('click', (e) => {
 
     document.getElementById('locate-btn').addEventListener('click', () => {
       if (!navigator.geolocation) {
-        alert('Your browser does not support location services.');
+        showAlert('Your browser does not support location services.');
         return;
       }
       requestPosition(true);
@@ -1277,9 +1709,11 @@ haulLocationMenu.addEventListener('click', (e) => {
           <div class="map-popup-card">
             ${store.image_path ? `<img class="map-popup-photo" src="${escapeHtml(store.image_path)}" alt="Photo of ${escapeHtml(store.name)}" width="160" height="90">` : ''}
             <h3>${escapeHtml(store.name)}</h3>
+            <p>${verifiedBadge(store)}</p>
             <p><span class="status-dot">&bull;</span> ${escapeHtml(store.status_text || '')}</p>
             <p><strong>${ratingLabel}</strong> | ${escapeHtml(store.price_range || '')}</p>
             <a data-view-details="${escapeHtml(store.id)}">View Store Details &rarr;</a>
+            ${store.reviewed === 0 ? '<p><em>Stamps open once an admin verifies it</em></p>' : `<a data-stamp-store="${escapeHtml(store.id)}">I'm here &middot; get a stamp</a>`}
           </div>`;
         const marker = L.marker([store.latitude, store.longitude], { icon: createCustomPin() })
           .addTo(map)
@@ -1358,16 +1792,17 @@ haulLocationMenu.addEventListener('click', (e) => {
         card.className = 'store-card';
         card.dataset.id = store.id;
         const ratingLabel = store.rating_count > 0 ? store.rating.toFixed(1) : 'New';
-                card.innerHTML = `
+        card.innerHTML = `
           ${store.image_path
             ? `<img class="store-img-placeholder store-img" src="${escapeHtml(store.image_path)}" alt="Photo of ${escapeHtml(store.name)}">`
             : `<div class="store-img-placeholder">${escapeHtml(store.name.charAt(0))}</div>`}
           <div class="store-info">
             <div class="store-header">
-              <h4>${escapeHtml(store.name)}</h4>
+              <h4>${escapeHtml(store.name)} ${verifiedBadge(store)}</h4>
               <span class="rating clickable" title="Rate this spot">${ratingLabel}</span>
             </div>
             <p class="distance">${escapeHtml(store.distance_label)}</p>
+            ${(stampedIds.has(Number(store.id)) || store.haul_count > 0) ? `<p class="card-meta">${stampedIds.has(Number(store.id)) ? '<span class="stamp-chip">\u2713 Stamped</span>' : ''}${store.haul_count > 0 ? `<span>${store.haul_count} haul${store.haul_count === 1 ? '' : 's'} tagged</span>` : ''}</p>` : ''}
             <div class="card-bottom-row">
               <button type="button" class="directions-btn">Get Directions</button>
               <div class="card-actions">
@@ -1382,12 +1817,14 @@ haulLocationMenu.addEventListener('click', (e) => {
             </div>
           </div>
           <div class="card-menu">
+            <button type="button" data-action="stamp">I'm here &middot; get a stamp</button>
             <button type="button" data-action="rate">Rate this spot</button>
           </div>`;
 
         card.querySelector('.directions-btn').addEventListener('click', (e) => {
           e.stopPropagation();
-          openDirections(store);
+          openStorePanel(store);
+          showRoute(store);
         });
 
         card.querySelector('.rating').addEventListener('click', (e) => {
@@ -1395,12 +1832,18 @@ haulLocationMenu.addEventListener('click', (e) => {
           openRateSpotModal(store.id);
         });
 
-                const menuBtn = card.querySelector('.card-menu-btn');
+        const menuBtn = card.querySelector('.card-menu-btn');
         const menu = card.querySelector('.card-menu');
         menuBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           document.querySelectorAll('.card-menu.open').forEach(m => { if (m !== menu) m.classList.remove('open'); });
           menu.classList.toggle('open');
+        });
+
+        menu.querySelector('[data-action="stamp"]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          menu.classList.remove('open');
+          checkInAt(store);
         });
 
         menu.querySelector('[data-action="rate"]').addEventListener('click', (e) => {
@@ -1409,7 +1852,7 @@ haulLocationMenu.addEventListener('click', (e) => {
           openRateSpotModal(store.id);
         });
 
-                const saveBtn = card.querySelector('.save-btn');
+        const saveBtn = card.querySelector('.save-btn');
         saveBtn.addEventListener('click', async (e) => {
           e.stopPropagation(); // don't trigger the card's "focus on map" click
           saveBtn.disabled = true;
@@ -1430,10 +1873,10 @@ haulLocationMenu.addEventListener('click', (e) => {
                 views['profile'].refreshSavedSpots();
               }
             } else {
-              alert(data.error || 'Could not update this spot.');
+              showAlert(data.error || 'Could not update this spot.', 'error');
             }
           } catch (err) {
-            alert('Could not reach the server. Is your PHP backend running?');
+            showAlert('Could not reach the server. Is your PHP backend running?');
           } finally {
             saveBtn.disabled = false;
           }
@@ -1448,12 +1891,192 @@ haulLocationMenu.addEventListener('click', (e) => {
       document.querySelectorAll('.card-menu.open').forEach(m => m.classList.remove('open'));
     });
 
+    /* ==========================================================================
+       STALL DETAILS PANEL (5.9) + HAULS FROM THIS STALL (5.10) + ROUTE ON OUR MAP
+       Opens in the left column when a stall is picked. api/stores/get.php sends
+       the stall, its written reviews and the hauls tagged to it in one call.
+       ========================================================================== */
+    const detailEl = document.getElementById('store-detail');
+    const sidebarEl = document.querySelector('.store-list-sidebar');
+    let openStoreId = null;
+    let routeLayer = null;
+    let routeToken = 0;      // so a slow answer from an older click is ignored
+
+    function starsText(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
+
+    function clearRoute() {
+      routeToken++;
+      if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+      const info = document.getElementById('route-info');
+      if (info) { info.classList.add('hidden'); info.innerHTML = ''; }
+    }
+
+    function closeStorePanel() {
+      clearRoute();
+      openStoreId = null;
+      detailEl.classList.add('hidden');
+      detailEl.innerHTML = '';
+      sidebarEl.classList.remove('detail-open');
+      document.querySelectorAll('.store-card').forEach(c => c.classList.remove('active'));
+    }
+
+    function straightKm(a, b) {
+      const R = 6371, rad = d => d * Math.PI / 180;
+      const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+    }
+
+    // Draw the road route from the visitor to the stall on this page's own map.
+    // Uses the free OpenStreetMap routing service; if it is unreachable we draw
+    // a straight dashed line and say so.
+    async function showRoute(store) {
+      const token = ++routeToken;
+      // look the box up each time: the panel is redrawn when reviews and hauls arrive
+      const say = (html) => { const info = document.getElementById('route-info'); if (info) { info.innerHTML = html; info.classList.remove('hidden'); } };
+      say('<span>Finding your location…</span>');
+      const me = userCoords || await getUserCoords(true);
+      if (token !== routeToken) return;
+      if (!me) {
+        say('<span>We need your location to draw the route. Allow location for this site and try again.</span>');
+        map.flyTo([store.latitude, store.longitude], 16, { duration: 0.6 });
+        return;
+      }
+      userCoords = userCoords || me;
+      setUserMarker(me.lat, me.lng);
+      say('<span>Drawing the route…</span>');
+
+      let line = null, km = null, mins = null, road = false;
+      try {
+        const url = 'https://router.project-osrm.org/route/v1/driving/' +
+          me.lng + ',' + me.lat + ';' + store.longitude + ',' + store.latitude + '?overview=full&geometries=geojson';
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.code === 'Ok' && data.routes && data.routes[0]) {
+          const r = data.routes[0];
+          line = L.geoJSON(r.geometry, { style: { color: '#C3291D', weight: 5, opacity: 0.9 } });
+          km = r.distance / 1000; mins = Math.max(1, Math.round(r.duration / 60)); road = true;
+        }
+      } catch (err) { /* fall through to the straight line */ }
+      if (token !== routeToken) return;
+      if (!line) {
+        line = L.polyline([[me.lat, me.lng], [store.latitude, store.longitude]], { color: '#C3291D', weight: 4, dashArray: '8 8' });
+        km = straightKm(me, { lat: Number(store.latitude), lng: Number(store.longitude) });
+      }
+      if (routeLayer) map.removeLayer(routeLayer);
+      routeLayer = line.addTo(map);
+      try { map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] }); } catch (err) {}
+      const kmText = km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(1) + ' km';
+      say(`<span><b>${kmText}</b>${road ? ' · about <b>' + mins + ' min</b> by road' : ' in a straight line (road route unavailable)'}</span>
+           <button type="button" class="mini-btn" data-d="clear-route">Clear route</button>`);
+    }
+
+    function reviewHtml(r) {
+      return `<li><div class="rv-top"><b>${escapeHtml(r.author)}</b><span class="rv-stars" aria-label="${r.stars} out of 5">${starsText(r.stars)}</span></div>
+        <p>${escapeHtml(r.comment)}</p><small>${escapeHtml(String(r.created_at || '').slice(0, 10))}</small></li>`;
+    }
+
+    function haulThumbHtml(h) {
+      return `<button type="button" class="sd-haul" data-haul-id="${Number(h.id)}" title="${escapeHtml(h.item_name || 'Haul')}">
+        ${h.image_path ? `<img src="${escapeHtml(h.image_path)}" alt="${escapeHtml(h.item_name || 'Haul')}">` : '<span class="sd-haul-ph"></span>'}
+        <span class="sd-haul-cap">@${escapeHtml(h.username)}${h.price ? ' · ₱' + Math.round(h.price) : ''}</span></button>`;
+    }
+
+    function renderStorePanel(store, extra) {
+      const reviews = extra ? extra.reviews : null;
+      const hauls = extra ? extra.hauls : null;
+      const oldRoute = document.getElementById('route-info');
+      const keepRoute = oldRoute && !oldRoute.classList.contains('hidden') ? oldRoute.innerHTML : null;
+      const ratingText = store.rating_count > 0 ? `${Number(store.rating).toFixed(1)} ★ · ${store.rating_count} rating${store.rating_count === 1 ? '' : 's'}` : 'No ratings yet';
+      detailEl.innerHTML = `
+        <button type="button" class="detail-back" data-d="back">&larr; All stalls</button>
+        ${store.image_path
+          ? `<img class="detail-photo" src="${escapeHtml(store.image_path)}" alt="Photo of ${escapeHtml(store.name)}">`
+          : `<div class="detail-photo ph">${escapeHtml(String(store.name || '?').charAt(0))}</div>`}
+        <h3 class="detail-name">${escapeHtml(store.name)} ${verifiedBadge(store)}</h3>
+        <p class="detail-rating">${ratingText}</p>
+        <dl class="detail-facts">
+          ${store.status_text ? `<div><dt>Hours</dt><dd>${escapeHtml(store.status_text)}</dd></div>` : ''}
+          ${store.price_range ? `<div><dt>Prices</dt><dd>${escapeHtml(store.price_range)}</dd></div>` : ''}
+          ${store.address ? `<div><dt>Address</dt><dd>${escapeHtml(store.address)}</dd></div>` : ''}
+          ${store.distance_label ? `<div><dt>From you</dt><dd>${escapeHtml(store.distance_label)}</dd></div>` : ''}
+        </dl>
+        <div class="detail-actions">
+          <button type="button" class="btn-primary" data-d="route">Get Directions</button>
+          <button type="button" class="btn-secondary" data-d="stamp">I'm here &middot; stamp</button>
+          <button type="button" class="btn-secondary" data-d="rate">Rate</button>
+        </div>
+        <div class="route-info hidden" id="route-info"></div>
+
+        <h4 class="detail-h">What visitors say</h4>
+        ${reviews === null ? '<p class="trail-hint">Loading…</p>'
+          : reviews.length ? `<ul class="detail-reviews">${reviews.map(reviewHtml).join('')}</ul>`
+          : '<p class="trail-hint">No written reviews yet. Be the first to rate this stall.</p>'}
+
+        <h4 class="detail-h">Hauls from this stall${extra ? ' (' + extra.haul_count + ')' : ''}</h4>
+        ${hauls === null ? '<p class="trail-hint">Loading…</p>'
+          : hauls.length ? `<div class="sd-hauls">${hauls.map(haulThumbHtml).join('')}</div>`
+          : '<p class="trail-hint">No hauls tagged to this stall yet. Tag it when you post yours.</p>'}`;
+      if (keepRoute) { const box = document.getElementById('route-info'); box.innerHTML = keepRoute; box.classList.remove('hidden'); }
+    }
+
+    async function openStorePanel(store) {
+      const keepRoute = openStoreId !== null && String(openStoreId) === String(store.id);
+      if (!keepRoute) clearRoute();
+      openStoreId = store.id;
+      sidebarEl.classList.add('detail-open');
+      detailEl.classList.remove('hidden');
+      document.querySelectorAll('.store-card').forEach(c => c.classList.toggle('active', c.dataset.id === String(store.id)));
+      renderStorePanel(store, null);
+      detailEl.scrollTop = 0;
+      try {
+        const res = await apiFetch('api/stores/get.php?id=' + encodeURIComponent(store.id));
+        const data = await res.json();
+        if (String(openStoreId) !== String(store.id)) return;   // the person moved on
+        if (!data.success) throw new Error(data.error || 'Could not load this stall.');
+        renderStorePanel(Object.assign({}, store, data.store), data);
+      } catch (err) {
+        if (String(openStoreId) !== String(store.id)) return;
+        const msg = document.createElement('p');
+        msg.className = 'no-results';
+        msg.textContent = 'Could not load reviews and hauls. ' + err.message;
+        detailEl.appendChild(msg);
+      }
+    }
+
+    detailEl.addEventListener('click', (e) => {
+      const store = currentStores.find(s => String(s.id) === String(openStoreId));
+      const haul = e.target.closest('[data-haul-id]');
+      if (haul) { openHaulDetail(Number(haul.dataset.haulId)); return; }
+      const btn = e.target.closest('[data-d]');
+      if (!btn || !store) return;
+      const act = btn.dataset.d;
+      if (act === 'back') closeStorePanel();
+      else if (act === 'route') showRoute(store);
+      else if (act === 'clear-route') clearRoute();
+      else if (act === 'stamp') checkInAt(store);
+      else if (act === 'rate') openRateSpotModal(store.id);
+    });
+
+    // Used by openDirections() (Saved Stalls) and anything that wants "go to this stall"
+    views['find-a-store'].directionsTo = async (place) => {
+      if (loadingStores) await loadingStores;
+      if (!currentStores.some(s => String(s.id) === String(place.id))) {
+        activeSearch = place.name || '';
+        document.getElementById('dashboard-search').value = activeSearch;
+        await loadStores();
+      }
+      const store = currentStores.find(s => String(s.id) === String(place.id));
+      if (!store) return;
+      setTimeout(() => { map.invalidateSize(); focusStore(store.id); showRoute(store); }, 150);
+    };
+
     function focusStore(id) {
       const store = currentStores.find(s => String(s.id) === String(id));
       if (!store) return;
       map.flyTo([store.latitude, store.longitude], 16, { duration: 0.6 });
-      const marker = markers[id];
-      if (marker) marker.openPopup();
+      map.closePopup();          // the details panel replaces the little popup
+      openStorePanel(store);
 
       document.querySelectorAll('.store-card').forEach(c => c.classList.remove('active'));
       const activeCard = document.querySelector(`.store-card[data-id="${id}"]`);
@@ -1463,6 +2086,11 @@ haulLocationMenu.addEventListener('click', (e) => {
     document.getElementById('dashboard-map').addEventListener('click', (e) => {
       const link = e.target.closest('[data-view-details]');
       if (link) focusStore(link.dataset.viewDetails);
+      const stampLink = e.target.closest('[data-stamp-store]');
+      if (stampLink) {
+        const st = currentStores.find(x => String(x.id) === String(stampLink.dataset.stampStore));
+        if (st) checkInAt(st);
+      }
     });
 
     let searchDebounce;
@@ -1470,6 +2098,7 @@ haulLocationMenu.addEventListener('click', (e) => {
       clearTimeout(searchDebounce);
       const val = e.target.value;
       searchDebounce = setTimeout(() => {
+        closeStorePanel();
         activeSearch = val.trim();
         loadStores();
       }, 250);
@@ -1480,16 +2109,17 @@ haulLocationMenu.addEventListener('click', (e) => {
     // there's nothing meaningful to sort by yet. list.php only recognizes
     // 'nearby'; anything else (including 'budget') falls back to its
     // rating-based default, same as before this was wired to the API.
-      setupDropdown(
-        document.getElementById('sort-dropdown-btn'),
-        document.getElementById('sort-dropdown-menu'),
-          (item) => {
+    setupDropdown(
+      document.getElementById('sort-dropdown-btn'),
+      document.getElementById('sort-dropdown-menu'),
+      (item) => {
         document.querySelectorAll('#sort-dropdown-menu .dropdown-item').forEach(i => i.classList.remove('active'));
-          item.classList.add('active');
+        item.classList.add('active');
         document.getElementById('sort-value-label').textContent = item.textContent;
         activeSort = item.dataset.value;
-      loadStores();
-  });
+        closeStorePanel();
+        loadStores();
+      });
 
     /* -------- SUGGEST A NEW SPOT MODAL -------- */
     const suggestSpotModal = document.getElementById('suggest-spot-modal');
@@ -1498,7 +2128,7 @@ haulLocationMenu.addEventListener('click', (e) => {
     const spotDropzone = document.getElementById('spot-dropzone');
     const spotDropzoneBody = document.getElementById('spot-dropzone-body');
 
-        // ---- Map picker ----
+    // ---- Map picker ----
     let spotPickerMap = null;
     let spotPin = null;
     let spotPinCoords = null;
@@ -1623,7 +2253,7 @@ haulLocationMenu.addEventListener('click', (e) => {
       e.preventDefault();
       const name = document.getElementById('spot-name').value.trim();
       if (!name) {
-        alert('Give the spot a name first.');
+        showAlert('Give the spot a name first.');
         return;
       }
       const address = document.getElementById('spot-address').value.trim();
@@ -1631,7 +2261,7 @@ haulLocationMenu.addEventListener('click', (e) => {
       const priceRange = document.getElementById('spot-price-range').value.trim();
 
       if (!spotPinCoords) {
-        alert('Drop a pin on the map first. Click where the spot is, or use "Find on map".');
+        showAlert('Drop a pin on the map first. Click where the spot is, or use "Find on map".');
         return;
       }
       const latitude = spotPinCoords.lat;
@@ -1655,15 +2285,18 @@ haulLocationMenu.addEventListener('click', (e) => {
         const data = await res.json();
 
         if (!data.success) {
-          alert(data.error || 'Could not submit that spot.');
+          showAlert(data.error || 'Could not submit that spot.', 'error');
           return;
         }
         resetSpotForm();
         closeSuggestSpotModal();
         await loadStores();
-        alert(`Thanks! "${data.store.name}" was added to the map for other thrifters to find.`);
+        showDialog({
+          title: 'Spot added!', tone: 'success', confirmText: 'Got it',
+          message: `Thanks! "${data.store.name}" is on the map for other thrifters to find. An admin will check it soon and give it a Verified badge.`
+        });
       } catch (err) {
-        alert('Could not reach the server. Is your PHP backend running?');
+        showAlert('Could not reach the server. Is your PHP backend running?');
       }
     });
 
@@ -1709,7 +2342,7 @@ haulLocationMenu.addEventListener('click', (e) => {
     rateSpotForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (selectedStars === 0) {
-        alert('Pick at least one star before submitting.');
+        showAlert('Pick at least one star before submitting.');
         return;
       }
       const comment = document.getElementById('rate-comment').value.trim();
@@ -1725,15 +2358,15 @@ haulLocationMenu.addEventListener('click', (e) => {
         const data = await res.json();
 
         if (!data.success) {
-          alert(data.error || 'Could not submit your rating.');
+          showAlert(data.error || 'Could not submit your rating.', 'error');
           return;
         }
 
         closeRateSpotModal();
         await loadStores();
-        alert(data.updated ? 'Your rating was updated.' : 'Thanks for rating this spot!');
+        showToast(data.updated ? 'Your rating was updated.' : 'Thanks for rating this spot!');
       } catch (err) {
-        alert('Could not reach the server. Is your PHP backend running?');
+        showAlert('Could not reach the server. Is your PHP backend running?');
       }
     });
 
@@ -1744,6 +2377,15 @@ haulLocationMenu.addEventListener('click', (e) => {
     // the map recalculates its size (needed because it was first drawn
     // while a sibling view may have affected layout).
     views['find-a-store'].onShow = () => setTimeout(() => map.invalidateSize(), 100);
+    views['find-a-store'].reload = () => loadStores();   // used by the admin dashboard after it changes a stall
+    views['find-a-store'].refreshCards = () => renderStoreCards(currentStores);   // after a stamp, to show the "Stamped" chip
+    views['find-a-store'].setSearch = (q) => {           // the Ukay Trail page: "Find stalls in Consolacion"
+      closeStorePanel();
+      activeSearch = q || '';
+      document.getElementById('dashboard-search').value = activeSearch;
+      return loadStores();
+    };
+    refreshStamps().then(() => { if (currentStores.length) renderStoreCards(currentStores); });
 
     // Used by the haul detail window: show one store on the map. If it isn't in
     // the current list (outside the ride radius, or filtered out by a search),
@@ -1760,9 +2402,363 @@ haulLocationMenu.addEventListener('click', (e) => {
   }
 
   /* ==========================================================================
+     6b. FRESH BALE — lazily initialized on first visit
+     Cards come from BALE_POSTS below. There is no bale table yet, so this is
+     sample data; when an API exists, replace BALE_POSTS with a fetch and keep
+     renderBale() as it is.
+     ========================================================================== */
+  /* ==========================================================================
+     6a. UKAY TRAIL (stamp card) — lazily initialized on first visit
+       api/trail/mine.php      GET  -> every open trail with my stamps and reward code
+       api/trail/checkin.php   POST -> "I'm here" (see checkInAt above)
+     ========================================================================== */
+  function initTrail() {
+    const list = document.getElementById('trail-list');
+    const emptyMsg = document.getElementById('no-trail');
+
+    function circles(t) {
+      let html = '';
+      for (let i = 0; i < t.stamps_needed; i++) {
+        const v = t.visited[i];
+        html += v
+          ? `<span class="stamp-dot filled" title="${escapeHtml(v.name)}">\u2713</span>`
+          : `<span class="stamp-dot">${i + 1}</span>`;
+      }
+      return html;
+    }
+
+    function render() {
+      emptyMsg.classList.toggle('hidden', trailData.length > 0);
+      list.innerHTML = trailData.map(t => {
+        const left = Math.max(0, t.stamps_needed - t.count);
+        const visited = t.visited.length
+          ? `<ul class="trail-visited">${t.visited.map(v => `<li><b>${escapeHtml(v.name)}</b><small>${escapeHtml(String(v.first_date || '').slice(0, 10))}</small></li>`).join('')}</ul>`
+          : '<p class="trail-hint">No stamps yet. Go to a stall and tap "I\'m here".</p>';
+        const reward = t.reward_code
+          ? `<div class="reward-box"><small>Your reward code</small><b class="code">${escapeHtml(t.reward_code)}</b><p>${escapeHtml(t.reward_text)}</p></div>`
+          : `<p class="trail-reward"><b>Reward:</b> ${escapeHtml(t.reward_text)}</p>`;
+        return `<article class="trail-card${t.complete ? ' done' : ''}">
+          <div class="trail-head">
+            <div><span class="script">visit ${t.stamps_needed} stalls</span><h3>${escapeHtml(t.name)}</h3></div>
+            <span class="bd ${t.complete ? 'bd-green' : 'bd-yellow'}">${Math.min(t.count, t.stamps_needed)} / ${t.stamps_needed}</span>
+          </div>
+          <div class="stamp-row">${circles(t)}</div>
+          <p class="trail-hint">${t.complete ? 'Trail complete!' : left + ' more stamp' + (left === 1 ? '' : 's') + ' to go'}${t.stalls_on_trail ? ' \u00b7 ' + t.stalls_on_trail + ' stall' + (t.stalls_on_trail === 1 ? '' : 's') + ' on this trail' : ''}</p>
+          ${visited}
+          ${reward}
+          <button type="button" class="btn-secondary" data-find-city="${escapeHtml(t.city)}">Find stalls${t.city ? ' in ' + escapeHtml(t.city) : ''}</button>
+        </article>`;
+      }).join('');
+    }
+
+    async function load() {
+      list.innerHTML = '<p class="no-results">Loading your stamp card\u2026</p>';
+      const d = await refreshStamps();
+      if (!d || !d.success) {
+        list.innerHTML = '<p class="no-results">Could not load the trail. Try again.</p>';
+        return;
+      }
+      render();
+    }
+
+    list.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-find-city]');
+      if (!b) return;
+      switchView('find-a-store');
+      const finder = views['find-a-store'];
+      if (finder.setSearch) finder.setSearch(b.dataset.findCity);
+    });
+
+    views['trail'].reload = load;
+    views['trail'].onShow = load;
+    load();
+  }
+
+  const BALE_POSTS = [
+    { store: 'Ukay-Ukay ni Aa',  city: 'Consolacion', line: 'Bale day Saturday, 7 AM', day: 'weekend',  color: '#A0B3D0', tags: [['new', 'New stock'], ['open', 'Open now']] },
+    { store: 'Aling Rosa Ukay',  city: 'Liloan',      line: 'Bale day Sunday',         day: 'tomorrow', color: '#E8B7A8', tags: [['new', 'New stock'], ['later', 'Opens tomorrow']] },
+    { store: 'Mang Ben Ukay',    city: 'Consolacion', line: '3 for \u20b1150 today',    day: 'today',    color: '#B7D3B5', tags: [['sale', 'Sale'], ['open', 'Open now']] },
+    { store: 'Tindahan ni Nena', city: 'Liloan',      line: 'Kids bale Friday',        day: 'weekend',  color: '#F0E2C0', tags: [['new', 'New stock']] }
+  ];
+  const BALE_TAG_CLASS = { new: 'bd-yellow', open: 'bd-green', sale: 'bd-blue', later: 'bd-brown' };
+
+  function initFreshBale() {
+    const grid = document.getElementById('bale-grid');
+    const emptyMsg = document.getElementById('no-bale');
+    let city = 'all';
+    let day = 'all';
+
+    function renderBale() {
+      const list = BALE_POSTS.filter(p =>
+        (city === 'all' || p.city === city) && (day === 'all' || p.day === day));
+      grid.innerHTML = list.map(p => `
+        <article class="bale-card">
+          <div class="bale-photo" style="background:${p.color}"></div>
+          <div class="bale-body">
+            <div class="bale-tags">${p.tags.map(t => `<span class="bd ${BALE_TAG_CLASS[t[0]]}">${escapeHtml(t[1])}</span>`).join('')}</div>
+            <h3>${escapeHtml(p.store)}</h3>
+            <p>${escapeHtml(p.city)} &middot; ${escapeHtml(p.line)}</p>
+            <button type="button" class="bale-see" data-store-name="${escapeHtml(p.store)}">See this stall</button>
+          </div>
+        </article>`).join('');
+      emptyMsg.classList.toggle('hidden', list.length > 0);
+    }
+
+    function wirePills(boxId, key, set) {
+      document.getElementById(boxId).addEventListener('click', (e) => {
+        const pill = e.target.closest('.pill');
+        if (!pill) return;
+        document.querySelectorAll('#' + boxId + ' .pill').forEach(p => p.classList.toggle('active', p === pill));
+        set(pill.dataset[key]);
+        renderBale();
+      });
+    }
+    wirePills('bale-city-pills', 'city', v => { city = v; });
+    wirePills('bale-day-pills',  'day',  v => { day = v; });
+
+    // "See this stall": look the stall up by name to get its real id, then show it on the map
+    grid.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.bale-see');
+      if (!btn) return;
+      const name = btn.dataset.storeName;
+      let id = null;
+      try {
+        const res = await apiFetch('api/stores/list.php?search=' + encodeURIComponent(name));
+        const data = await res.json();
+        if (data.success && Array.isArray(data.stores)) {
+          const hit = data.stores.find(s => s.name.toLowerCase() === name.toLowerCase()) || data.stores[0];
+          if (hit) id = hit.id;
+        }
+      } catch (err) { /* fall through: open the finder and search by name */ }
+      openStoreOnMap(id, name);
+    });
+
+    document.getElementById('join-trail-btn').addEventListener('click', () => switchView('trail'));
+    renderBale();
+  }
+
+  /* ==========================================================================
+     6c. STALL OWNER DASHBOARD — lazily initialized on first visit
+     Layout only for now: the Home tab shows sample numbers. The other tabs
+     (post bale, add a find, holds, my stall, QR poster) need their own
+     panels and API endpoints before they can do anything.
+     ========================================================================== */
+  function initSeller() {
+    const view = document.getElementById('seller-view');
+    function setTab(tab) {
+      view.querySelectorAll('.side-item').forEach(b => b.classList.toggle('active', b.dataset.sellerTab === tab));
+      if (tab !== 'home') showToast('This part of the stall owner dashboard is not built yet.', 'error');
+    }
+    view.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-seller-tab]');
+      if (btn) setTab(btn.dataset.sellerTab);
+    });
+    if (currentUser && (currentUser.stall_name || currentUser.display_name)) {
+      const nameEl = document.getElementById('seller-stall-name');
+      if (nameEl && currentUser.stall_name) nameEl.textContent = currentUser.stall_name;
+    }
+  }
+
+  /* ==========================================================================
+     6d. ADMIN DASHBOARD — lazily initialized on first visit
+     Reached from the avatar menu; the link only shows for users whose role is
+     "admin", and every api/admin/*.php file checks the role again on the server.
+       overview.php  GET   -> everything on this page
+       stall.php     POST  -> approve / remove / merge a stall
+       report.php    POST  -> remove / dismiss a reported haul or comment
+     ========================================================================== */
+  function initAdmin() {
+    if (!currentUser || currentUser.role !== 'admin') {
+      showToast('Admins only.', 'error');
+      switchView('find-a-store');
+      return;
+    }
+    const view = document.getElementById('admin-view');
+    const TITLES = {
+      overview: ['this week', 'Admin overview'],
+      stalls:   ['all stalls', 'Stalls'],
+      reports:  ['moderation', 'Reports'],
+      users:    ['everyone', 'Users']
+    };
+    const REASON_LABEL = { spam: 'Spam', photo: 'Photo', abuse: 'Rude', other: 'Other' };
+    const REASON_CLASS = { spam: 'b-red', photo: 'b-brown', abuse: 'b-red', other: 'b-brown' };
+    let data = null;
+    let tab = 'overview';
+    let stat = null;          // which number box is open: stalls | users | hauls | pending
+
+    const empty = (text) => `<p class="list-empty">${escapeHtml(text)}</p>`;
+    const thumb = (s) => s.image_path
+      ? `<img class="thumb thumb-img" src="${escapeHtml(s.image_path)}" alt="">`
+      : `<span class="thumb" style="background:#F0E2C0"></span>`;
+
+    function stallRow(s, withStatus) {
+      const where = [s.address, s.submitted_by_name ? 'suggested by @' + s.submitted_by_name : ''].filter(Boolean).join(' \u00b7 ');
+      const dup = s.duplicate_of ? `<small class="dup">Possible duplicate of ${escapeHtml(s.duplicate_of.name)}</small>` : '';
+      const status = withStatus
+        ? `<span class="badge ${s.reviewed ? 'b-green' : 'b-red'}">${s.reviewed ? 'Approved' : 'Waiting'}</span>` : '';
+      const approve = s.reviewed ? '' : `<button type="button" class="mini-btn mb-green" data-admin-act="approve" data-id="${s.id}">Approve</button>`;
+      const merge = s.duplicate_of
+        ? `<button type="button" class="mini-btn mb-blue" data-admin-act="merge" data-id="${s.id}" data-into="${s.duplicate_of.id}" data-name="${escapeHtml(s.name)}" data-into-name="${escapeHtml(s.duplicate_of.name)}">Merge</button>` : '';
+      return `<div class="row">${thumb(s)}<span class="grow"><b>${escapeHtml(s.name)}</b><small>${escapeHtml(where)}</small>${dup}</span>${status}
+        <span class="actions">${approve}${merge}<button type="button" class="mini-btn" data-admin-act="remove" data-id="${s.id}" data-name="${escapeHtml(s.name)}">Remove</button></span></div>`;
+    }
+
+    function reportRow(r, withActions) {
+      const kind = r.target_type === 'comment' ? 'Comment' : 'Haul';
+      const badges = r.reasons.map(x => `<span class="badge ${REASON_CLASS[x] || 'b-brown'}">${REASON_LABEL[x] || x}</span>`).join(' ');
+      const times = `Reported ${r.count} time${r.count === 1 ? '' : 's'}`;
+      const actions = withActions
+        ? `<span class="actions"><button type="button" class="mini-btn mb-red" data-admin-act="report-remove" data-type="${r.target_type}" data-id="${r.target_id}">Remove ${kind.toLowerCase()}</button><button type="button" class="mini-btn" data-admin-act="report-dismiss" data-type="${r.target_type}" data-id="${r.target_id}">Dismiss</button></span>` : '';
+      return `<div class="row"><span class="grow"><b>${kind} by @${escapeHtml(r.author)}</b><small>${escapeHtml(r.preview)}</small><small>${times}</small></span>${badges}${actions}</div>`;
+    }
+
+    function userRow(u) {
+      return `<div class="row"><span class="grow"><b>${escapeHtml(u.display_name || u.username)}</b><small>@${escapeHtml(u.username)} \u00b7 ${u.hauls} haul${u.hauls === 1 ? '' : 's'} \u00b7 joined ${escapeHtml((u.created_at || '').slice(0, 10))}</small></span>
+         <span class="badge ${u.role === 'admin' ? 'b-red' : 'b-brown'}">${u.role === 'admin' ? 'Admin' : 'Shopper'}</span></div>`;
+    }
+
+    function haulRow(h) {
+      const bits = ['@' + h.username, h.store_name, h.price ? '\u20b1' + Math.round(h.price) : '', (h.created_at || '').slice(0, 10)].filter(Boolean).join(' \u00b7 ');
+      return `<div class="row">${thumb(h)}<span class="grow"><b>${escapeHtml(h.item_name || 'Haul')}</b><small>${escapeHtml(bits)}</small></span></div>`;
+    }
+
+    // The list under the four number boxes (and what the boxes' numbers add up to)
+    function renderDetail() {
+      const box = document.getElementById('admin-detail');
+      const cols = document.getElementById('admin-overview-cols');
+      view.querySelectorAll('[data-admin-stat]').forEach(b => b.classList.toggle('selected', b.dataset.adminStat === stat));
+      document.getElementById('admin-stat-hint').classList.toggle('hidden', !!stat);
+      document.getElementById('admin-trail-line').classList.toggle('hidden', !!stat);
+      box.classList.toggle('hidden', !stat || !data);
+      cols.classList.toggle('hidden', !!stat);
+      if (!stat || !data) return;
+      let title, rows;
+      if (stat === 'stalls') {
+        title = data.stalls.length + ' stall' + (data.stalls.length === 1 ? '' : 's') + ' listed';
+        rows = data.stalls.map(s => stallRow(s, true)).join('') || empty('No stalls yet.');
+      } else if (stat === 'pending') {
+        title = data.pending.length + ' waiting for review';
+        rows = data.pending.map(s => stallRow(s, false)).join('') || empty('Nothing waiting. All suggested stalls are reviewed.');
+      } else if (stat === 'users') {
+        const shoppers = data.users.filter(u => u.role !== 'admin');
+        title = shoppers.length + ' shopper' + (shoppers.length === 1 ? '' : 's');
+        rows = shoppers.map(userRow).join('') || empty('No shoppers yet.');
+      } else {
+        const hauls = data.hauls || [];
+        title = hauls.length + ' haul' + (hauls.length === 1 ? '' : 's') + ' posted';
+        rows = hauls.map(haulRow).join('') || empty('No hauls posted yet.');
+      }
+      document.getElementById('admin-detail-title').textContent = title;
+      document.getElementById('admin-detail-list').innerHTML = rows;
+    }
+
+    function render() {
+      if (!data) return;
+      const st = data.stats;
+      document.getElementById('admin-stat-stalls').textContent = st.stalls;
+      document.getElementById('admin-stat-users').textContent = st.users;
+      document.getElementById('admin-stat-hauls').textContent = st.hauls;
+      document.getElementById('admin-stat-pending').textContent = st.pending;
+      const bs = document.getElementById('admin-badge-stalls');
+      const br = document.getElementById('admin-badge-reports');
+      bs.textContent = st.pending + ' new';  bs.classList.toggle('hidden', !st.pending);
+      br.textContent = st.reports;           br.classList.toggle('hidden', !st.reports);
+
+      document.getElementById('admin-suggested-list').innerHTML =
+        data.pending.length ? data.pending.slice(0, 5).map(s => stallRow(s, false)).join('') : empty('Nothing waiting. All suggested stalls are reviewed.');
+      document.getElementById('admin-reports-list').innerHTML =
+        data.reports.length ? data.reports.slice(0, 3).map(r => reportRow(r, false)).join('') : empty('No reports right now.');
+      document.getElementById('admin-stalls-list').innerHTML =
+        data.stalls.length ? data.stalls.map(s => stallRow(s, true)).join('') : empty('No stalls yet.');
+      document.getElementById('admin-reports-full').innerHTML =
+        data.reports.length ? data.reports.map(r => reportRow(r, true)).join('') : empty('No open reports. Nice and quiet.');
+      document.getElementById('admin-users-list').innerHTML = data.users.map(userRow).join('');
+      const tl = data.trail;
+      document.getElementById('admin-trail-line').textContent = tl
+        ? 'Ukay Trail: ' + tl.stamps_today + ' stamp' + (tl.stamps_today === 1 ? '' : 's') + ' today \u00b7 ' + tl.stamps_total + ' in total \u00b7 ' + tl.rewards + ' reward' + (tl.rewards === 1 ? '' : 's') + ' earned' : '';
+      renderDetail();
+    }
+
+    async function load() {
+      try {
+        const res = await apiFetch('api/admin/overview.php');
+        const json = await res.json();
+        if (!json.success) {
+          showToast(json.error || 'Could not load the admin dashboard.', 'error');
+          if (res.status === 403) switchView('find-a-store');
+          return;
+        }
+        data = json;
+        render();
+      } catch (err) {
+        showToast('Could not reach the server. Try again.', 'error');
+      }
+    }
+
+    function setTab(name) {
+      tab = name;
+      view.querySelectorAll('.side-item').forEach(b => b.classList.toggle('active', b.dataset.adminTab === name));
+      view.querySelectorAll('.admin-panel').forEach(p => p.classList.toggle('hidden', p.id !== 'admin-panel-' + name));
+      document.getElementById('admin-kicker').textContent = TITLES[name][0];
+      document.getElementById('admin-title').textContent = TITLES[name][1];
+    }
+
+    async function send(url, body, okText) {
+      try {
+        const res = await apiFetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const json = await res.json();
+        showToast(json.success ? (json.message || okText) : (json.error || 'That did not work.'), json.success ? 'success' : 'error');
+        if (json.success) {
+          await load();
+          // the Find a Stall list and the feeds may now be out of date
+          if (views['find-a-store'].inited && views['find-a-store'].reload) views['find-a-store'].reload();
+          if (views['community-feed'].inited && views['community-feed'].refreshHauls) views['community-feed'].refreshHauls();
+        }
+      } catch (err) {
+        showToast('Could not reach the server. Try again.', 'error');
+      }
+    }
+
+    view.addEventListener('click', async (e) => {
+      const statBtn = e.target.closest('[data-admin-stat]');
+      if (statBtn) { stat = (stat === statBtn.dataset.adminStat) ? null : statBtn.dataset.adminStat; renderDetail(); return; }
+      if (e.target.closest('[data-admin-stat-close]')) { stat = null; renderDetail(); return; }
+      const tabBtn = e.target.closest('[data-admin-tab]');
+      if (tabBtn) { setTab(tabBtn.dataset.adminTab); return; }
+      const b = e.target.closest('[data-admin-act]');
+      if (!b) return;
+      const id = Number(b.dataset.id);
+      switch (b.dataset.adminAct) {
+        case 'approve':
+          send('api/admin/stall.php', { id, action: 'approve' }, 'Stall approved.');
+          break;
+        case 'remove':
+          if (await confirmDialog('Remove "' + b.dataset.name + '"? This also deletes its ratings and saves.'))
+            send('api/admin/stall.php', { id, action: 'remove' }, 'Stall removed.');
+          break;
+        case 'merge':
+          if (await confirmDialog('Merge "' + b.dataset.name + '" into "' + b.dataset.intoName + '"? Hauls, ratings and saves move over, then the duplicate is deleted.'))
+            send('api/admin/stall.php', { id, action: 'merge', into: Number(b.dataset.into) }, 'Stalls merged.');
+          break;
+        case 'report-remove':
+          if (await confirmDialog('Remove this ' + b.dataset.type + ' for good?'))
+            send('api/admin/report.php', { target_type: b.dataset.type, target_id: id, action: 'remove' }, 'Removed.');
+          break;
+        case 'report-dismiss':
+          send('api/admin/report.php', { target_type: b.dataset.type, target_id: id, action: 'dismiss' }, 'Reports dismissed.');
+          break;
+      }
+    });
+
+    views['admin'].onShow = load;
+    setTab('overview');
+    load();
+  }
+
+  /* ==========================================================================
      7. COMMUNITY FEED — lazily initialized on first visit
      ========================================================================== */
-      function initCommunityFeed() {
+  function initCommunityFeed() {
     const grid = document.getElementById('haul-masonry');
     const noHaulsMsg = document.getElementById('no-hauls');
     const pillsContainer = document.getElementById('feed-filter-pills');
@@ -1967,6 +2963,7 @@ haulLocationMenu.addEventListener('click', (e) => {
       pollTimer = null;
     }
 
+
     loadSavedHaulIds().then(() => fetchAndRenderHauls());
     startPolling();
 
@@ -2102,7 +3099,7 @@ haulLocationMenu.addEventListener('click', (e) => {
   /* ==========================================================================
      8. NOTIFICATIONS — lazily initialized on first visit
      ========================================================================== */
-    function initNotifications() {
+  function initNotifications() {
     let notifications = [];
 
     const listEl = document.getElementById('notif-list');
@@ -2142,6 +3139,20 @@ haulLocationMenu.addEventListener('click', (e) => {
       }
     }
 
+    // 5.13: a notification opens what it is about
+    function openNotificationTarget(n) {
+      const id = Number(n.target_id);
+      if (n.target_type === 'haul') {
+        openHaulDetail(id);
+      } else if (n.target_type === 'store') {
+        switchView('find-a-store');
+        const finder = views['find-a-store'];
+        if (finder.showStore) finder.showStore(id, n.location_label || '');
+      } else if (n.target_type === 'trail') {
+        switchView('trail');
+      }
+    }
+
     function render() {
       listEl.innerHTML = '';
       const filtered = notifications.filter(n => activeFilter === 'all' || n.type === activeFilter);
@@ -2153,6 +3164,9 @@ haulLocationMenu.addEventListener('click', (e) => {
         item.dataset.id = n.id;
         const isSystem = n.type === 'system';
         const actor = n.actor_username || 'UkayFinds';
+        const hasTarget = !!(n.target_type && n.target_id);
+        const icon = n.target_type === 'trail' ? '\u2713' : ({ like: '\u2665', comment: '\u270E', rating: '\u2605', spot: '\u2316', system: '\u2605' }[n.type] || '\u2605');
+        if (hasTarget) item.classList.add('has-target');
         item.innerHTML = `
           <span class="notif-dot"></span>
           <div class="notif-avatar${isSystem ? ' notif-avatar-system' : ''}">${isSystem ? '★' : escapeHtml(actor.charAt(0).toUpperCase())}</div>
@@ -2162,9 +3176,13 @@ haulLocationMenu.addEventListener('click', (e) => {
           </div>
           <div class="notif-right">
             <span class="notif-time">${timeAgo(n.created_at)}</span>
-            <div class="notif-thumb"></div>
+            <div class="notif-thumb notif-type notif-type-${escapeHtml(n.type)}" title="${escapeHtml(n.type)}">${icon}</div>
           </div>`;
-        item.addEventListener('click', () => markAsRead(n.id));
+        item.addEventListener('click', (e) => {
+          markAsRead(n.id);
+          if (e.target.closest('.user-link') || !hasTarget) return;   // names open that person's profile instead
+          openNotificationTarget(n);
+        });
         listEl.appendChild(item);
       });
 
@@ -2258,7 +3276,7 @@ haulLocationMenu.addEventListener('click', (e) => {
 
     // Fetch real stats (hauls posted, likes received, spots saved) instead
     // of the static placeholder numbers baked into the HTML.
-     function loadStats() {
+    function loadStats() {
       apiFetch('api/profile/stats.php')
         .then(res => res.json())
         .then(data => {
@@ -2271,7 +3289,6 @@ haulLocationMenu.addEventListener('click', (e) => {
     }
     loadStats();
 
-    let showcaseItems = []; // populated from the database by renderShowcase(), not hardcoded
     let savedSpots = [];
     let savedSort = 'nearby';
 
@@ -2282,10 +3299,6 @@ haulLocationMenu.addEventListener('click', (e) => {
     const noItemsMsg = document.getElementById('no-items');
     const tabsContainer = document.getElementById('profile-tabs');
 
-    const showcasePanel = document.getElementById('showcase-panel');
-    const showcaseEmpty = document.getElementById('showcase-empty');
-    const showcaseGrid = document.getElementById('showcase-masonry');
-
     const draftsPanel = document.getElementById('drafts-panel');
     const draftsListEl = document.getElementById('drafts-list');
     const noDraftsMsg = document.getElementById('no-drafts');
@@ -2295,17 +3308,14 @@ haulLocationMenu.addEventListener('click', (e) => {
     function render() {
       grid.classList.toggle('hidden', activeTab !== 'hauls' && activeTab !== 'saved');
       savedPanel.classList.toggle('hidden', activeTab !== 'spots');
-      showcasePanel.classList.toggle('hidden', activeTab !== 'showcase');
       draftsPanel.classList.toggle('hidden', activeTab !== 'drafts');
       // The generic "Nothing here yet" message only belongs to Hauls / Saved Spots
-      if (activeTab === 'showcase' || activeTab === 'drafts') noItemsMsg.classList.add('hidden');
+      if (activeTab === 'drafts') noItemsMsg.classList.add('hidden');
 
       if (activeTab === 'hauls') {
         renderHauls();
       } else if (activeTab === 'spots') {
         renderSavedSpots();
-      } else if (activeTab === 'showcase') {
-        renderShowcase();
       } else if (activeTab === 'saved') {
         renderSavedHauls();
       } else {
@@ -2385,7 +3395,7 @@ haulLocationMenu.addEventListener('click', (e) => {
     }
 
     async function deleteMyHaul(h) {
-      if (!confirm('Delete this haul? This can\'t be undone.')) return;
+      if (!(await confirmDialog('Delete this haul? This can\'t be undone.'))) return;
       try {
         const res = await apiFetch('api/hauls/delete.php', {
           method: 'POST',
@@ -2417,7 +3427,7 @@ haulLocationMenu.addEventListener('click', (e) => {
         const res = await apiFetch('api/saved-spots/list.php' + (qs ? '?' + qs : ''));
         const data = await res.json();
         savedSpots = data.spots || [];
-                
+
         if (savedSort === 'rating') savedSpots.sort((a, b) => b.rating - a.rating);
 
         savedListEl.innerHTML = '';
@@ -2485,62 +3495,15 @@ haulLocationMenu.addEventListener('click', (e) => {
       renderSavedSpots();
     }
 
-    async function renderShowcase() {
-      try {
-        const res = await apiFetch('api/showcase/list.php');
-        const data = await res.json();
-        showcaseItems = data.listings || [];
-      } catch (err) {
-        showcaseItems = [];
-      }
-
-      const isEmpty = showcaseItems.length === 0;
-      showcaseEmpty.classList.toggle('hidden', !isEmpty);
-      showcaseGrid.classList.toggle('hidden', isEmpty);
-
-      if (isEmpty) return;
-
-      showcaseGrid.innerHTML = '';
-      showcaseItems.forEach(item => {
-        const displayPrice = item.selling_method === 'bidding'
-          ? `Starting at ₱${item.bid_start_price.toFixed(0)} (+₱${item.bid_increment.toFixed(0)})`
-          : `${item.selling_method.charAt(0).toUpperCase() + item.selling_method.slice(1)} at ₱${(item[item.selling_method + '_price']).toFixed(0)}`;
-
-        const mediaHtml = item.image_path
-          ? `<img class="item-fill" src="${escapeHtml(item.image_path)}" alt="${escapeHtml(item.item_name)}">`
-          : `<div class="item-fill"></div>`;
-
-        const card = document.createElement('div');
-        card.className = 'showcase-item';
-        card.innerHTML = `
-          <span class="showcase-method-badge showcase-method-${escapeHtml(item.selling_method)}">${escapeHtml(item.selling_method)}</span>
-          ${mediaHtml}
-          <div class="item-caption">
-            ${escapeHtml(item.item_name)}
-            <span>${escapeHtml(displayPrice)}</span>
-            ${detailsHtml(item, true)}
-          </div>
-          <div class="item-actions">
-            <button type="button" data-action="edit">Edit</button>
-            <button type="button" data-action="delete" class="danger">Delete</button>
-          </div>`;
-        card.querySelector('[data-action="edit"]').addEventListener('click', (e) => { e.stopPropagation(); openShowcaseEdit(item); });
-        card.querySelector('[data-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); deleteMyShowcase(item); });
-        showcaseGrid.appendChild(card);
-      });
-    }
-
-        async function renderDrafts() {
+    async function renderDrafts() {
       draftsListEl.innerHTML = '<p class="no-results">Loading drafts…</p>';
       try {
         const res = await apiFetch('api/drafts/list.php');
         const data = await res.json();
         if (!data.success) throw new Error(data.error || 'Failed to load drafts.');
 
-        const drafts = [
-          ...data.hauls.map(d => ({ ...d, type: 'haul' })),
-          ...data.showcase.map(d => ({ ...d, type: 'showcase' }))
-        ].sort((a, b) => b.created_at.localeCompare(a.created_at));
+        const drafts = (data.hauls || []).map(d => ({ ...d, type: 'haul' }))
+          .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
         draftsListEl.innerHTML = '';
         noDraftsMsg.classList.toggle('hidden', drafts.length > 0);
@@ -2554,7 +3517,7 @@ haulLocationMenu.addEventListener('click', (e) => {
           card.innerHTML = `
             ${thumb}
             <div class="draft-info">
-              <span class="draft-type">${d.type === 'haul' ? 'Haul draft' : 'Showcase draft'}</span>
+              <span class="draft-type">Haul draft</span>
               <p class="draft-title${d.item_name ? '' : ' untitled'}">${d.item_name ? escapeHtml(d.item_name) : 'Untitled draft'}</p>
               <p class="draft-meta">Saved ${formatTimeAgo(d.created_at)}</p>
             </div>
@@ -2564,10 +3527,10 @@ haulLocationMenu.addEventListener('click', (e) => {
             </div>`;
 
           card.querySelector('[data-action="edit"]').addEventListener('click', () => {
-            if (d.type === 'haul') openHaulDraft(d); else openShowcaseDraft(d);
+            openHaulDraft(d);
           });
           card.querySelector('[data-action="delete"]').addEventListener('click', async () => {
-            if (!confirm('Delete this draft? This can\'t be undone.')) return;
+            if (!(await confirmDialog('Delete this draft? This can\'t be undone.'))) return;
             try {
               const r = await apiFetch('api/drafts/delete.php', {
                 method: 'POST',
@@ -2575,10 +3538,10 @@ haulLocationMenu.addEventListener('click', (e) => {
                 body: JSON.stringify({ type: d.type, id: d.id })
               });
               const out = await r.json();
-              if (!out.success) { alert(out.error || 'Could not delete that draft.'); return; }
+              if (!out.success) { showAlert(out.error || 'Could not delete that draft.', 'error'); return; }
               renderDrafts();
             } catch (err) {
-              alert('Could not reach the server. Is your PHP backend running?');
+              showAlert('Could not reach the server. Is your PHP backend running?');
             }
           });
           draftsListEl.appendChild(card);
@@ -2588,316 +3551,6 @@ haulLocationMenu.addEventListener('click', (e) => {
       }
     }
 
-    /* -------- POST TO SHOWCASE MODAL --------
-       Lives inside initProfile (not shared at the top level like the Post
-       Haul modal) because showcaseItems only exists here — no other view
-       needs to read or write it. */
-    const showcaseModal = document.getElementById('post-showcase-modal');
-    const showcaseForm = document.getElementById('post-showcase-form');
-    const showcaseMediaInput = document.getElementById('showcase-media-input');
-    const showcaseDropzone = document.getElementById('showcase-dropzone');
-    const showcaseDropzoneBody = document.getElementById('showcase-dropzone-body');
-    const methodPills = document.querySelectorAll('#selling-method-group .method-pill');
-    const methodFieldPanels = {
-      bidding: document.getElementById('method-fields-bidding'),
-      lock: document.getElementById('method-fields-lock'),
-      grab: document.getElementById('method-fields-grab'),
-      mine: document.getElementById('method-fields-mine')
-    };
-    const methodHints = {
-      bidding: 'Buyers place increasing bids until the highest offer wins.',
-      lock: 'One buyer pays the Lock price to reserve the item for pickup or payment.',
-      grab: 'First buyer to pay the Grab price gets the item — no waiting.',
-      mine: 'Buyers claim it by paying the Mine price — first valid claim wins.'
-    };
-    const methodHintEl = document.getElementById('method-hint');
-    let selectedMethod = 'bidding';
-    let editingShowcaseDraftId = null;
-    let editingShowcaseDraftImage = null;
-    let editingShowcaseId = null;      // set while editing an already-active listing
-
-        // ---- Preview + Specific Details + Tag Thrift Spot ----
-    const showcasePreviewMedia = document.getElementById('showcase-preview-media');
-    const showcaseDetailsToggle = document.getElementById('showcase-specific-details-toggle');
-    const showcaseDetailsPanel = document.getElementById('showcase-specific-details-panel');
-    const showcaseSizeMenu = document.getElementById('showcase-size-dropdown-menu');
-    const showcaseLocationMenu = document.getElementById('showcase-location-dropdown-menu');
-    let selectedShowcaseSize = '';
-    let selectedShowcaseLocation = '';   // spot name, for the label and preview
-    let selectedShowcaseStoreId = '';    // spot id, what the server saves
-
-    showcaseDetailsToggle.addEventListener('click', () => {
-      const opening = !showcaseDetailsPanel.classList.contains('open');
-      showcaseDetailsPanel.classList.toggle('open', opening);
-      showcaseDetailsToggle.classList.toggle('open', opening);
-    });
-
-    function setShowcaseSize(value) {
-      selectedShowcaseSize = value || '';
-      document.getElementById('showcase-size-label').textContent = value || 'Select size';
-      showcaseSizeMenu.querySelectorAll('.dropdown-item').forEach(i =>
-        i.classList.toggle('active', !!value && i.dataset.value === value));
-    }
-    function setShowcaseLocation(id, name) {
-      selectedShowcaseStoreId = id ? String(id) : '';
-      selectedShowcaseLocation = name || '';
-      document.getElementById('showcase-location-label').textContent = name || 'Select Location';
-      showcaseLocationMenu.querySelectorAll('.dropdown-item').forEach(i =>
-        i.classList.toggle('active', !!id && i.dataset.value === String(id)));
-      updateShowcasePreview();
-    }
-
-    setupDropdown(document.getElementById('showcase-size-dropdown-btn'), showcaseSizeMenu,
-      (item) => setShowcaseSize(item.dataset.value));
-    const showcaseLocationBtn = document.getElementById('showcase-location-dropdown-btn');
-    setupDropdown(showcaseLocationBtn, showcaseLocationMenu, () => {});
-    // The menu items are rebuilt each time the modal opens, so listen on the menu itself
-    showcaseLocationMenu.addEventListener('click', (e) => {
-      const item = e.target.closest('.dropdown-item');
-      if (!item || item.disabled) return;
-      setShowcaseLocation(item.dataset.value, item.textContent);
-      showcaseLocationMenu.classList.remove('open');
-      showcaseLocationBtn.classList.remove('open');
-    });
-
-    function updateShowcasePreview() {
-      const val = (id) => document.getElementById(id).value.trim();
-      document.getElementById('showcase-preview-name').textContent = val('showcase-item-name') || 'Item name';
-      document.getElementById('showcase-preview-caption').textContent = val('showcase-caption') || 'Your description will show up here...';
-
-      let price = '';
-      if (selectedMethod === 'bidding') {
-        if (val('bid-start-price')) price = `From ₱${val('bid-start-price')}`;
-      } else if (val(`${selectedMethod}-price`)) {
-        price = `₱${val(`${selectedMethod}-price`)}`;
-      }
-      document.getElementById('showcase-preview-price').textContent = price;
-
-      const badge = document.getElementById('showcase-preview-badge');
-      badge.textContent = selectedMethod;
-      badge.className = 'showcase-method-badge showcase-method-' + selectedMethod;
-
-      document.getElementById('showcase-preview-location-text').textContent = selectedShowcaseLocation;
-      document.getElementById('showcase-preview-location').classList.toggle('hidden', !selectedShowcaseLocation);
-    }
-    ['showcase-item-name', 'showcase-caption', 'bid-start-price', 'bid-increment', 'lock-price', 'grab-price', 'mine-price']
-      .forEach(id => document.getElementById(id).addEventListener('input', updateShowcasePreview));
-
-    function setSellingMethod(method) {
-      selectedMethod = method;
-      methodPills.forEach(p => p.classList.toggle('active', p.dataset.method === method));
-      Object.keys(methodFieldPanels).forEach(k => methodFieldPanels[k].classList.toggle('hidden', k !== method));
-      methodHintEl.textContent = methodHints[method];
-      updateShowcasePreview();
-    }
-
-    methodPills.forEach(btn => {
-      btn.addEventListener('click', () => setSellingMethod(btn.dataset.method));
-    });
-
-    function resetShowcaseDropzone() {
-      showcaseMediaInput.value = '';
-      showcaseDropzoneBody.innerHTML = `
-        <div class="haul-dropzone-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-        </div>
-        <p class="haul-dropzone-text">Click or drag a photo to upload<br><span>(PNG, JPG)</span></p>`;
-    }
-
-    function previewShowcaseFile(file) {
-      if (!file || !file.type.startsWith('image/')) return;
-      const url = URL.createObjectURL(file);
-      setPreviewMedia(showcasePreviewMedia, url);
-      showcaseDropzoneBody.innerHTML = `<img class="haul-dropzone-preview" src="${url}" alt="Selected item photo"><span class="haul-dropzone-filename">${escapeHtml(file.name)}</span>`;
-    }
-
-    showcaseMediaInput.addEventListener('change', () => previewShowcaseFile(showcaseMediaInput.files[0]));
-    ['dragover', 'dragleave', 'drop'].forEach(evt => {
-      showcaseDropzone.addEventListener(evt, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        showcaseDropzone.classList.toggle('dragover', evt === 'dragover');
-        if (evt === 'drop' && e.dataTransfer.files[0]) {
-          showcaseMediaInput.files = e.dataTransfer.files;
-          previewShowcaseFile(e.dataTransfer.files[0]);
-        }
-      });
-    });
-
-    function openPostShowcaseModal() {
-      setModalOpen(showcaseModal, true);
-      // Refresh the spot list so a spot suggested a minute ago can be tagged
-      loadSpotChoices().then(() => fillSpotMenu(showcaseLocationMenu, selectedShowcaseStoreId));
-    }
-
-    function resetShowcaseForm() {
-      showcaseForm.reset();
-      resetShowcaseDropzone();
-      setSellingMethod('bidding');
-      setShowcaseSize('');
-      setShowcaseLocation('');
-      showcaseDetailsPanel.classList.remove('open');
-      showcaseDetailsToggle.classList.remove('open');
-      editingShowcaseDraftId = null;
-      editingShowcaseDraftImage = null;
-      editingShowcaseId = null;
-      setShowcaseEditMode(false);
-      setPreviewMedia(showcasePreviewMedia, null);
-      updateShowcasePreview();
-    }
-
-    function closePostShowcaseModal() {
-      setModalOpen(showcaseModal, false);
-      if (editingShowcaseDraftId !== null || editingShowcaseId !== null) resetShowcaseForm();
-    }
-
-    function setShowcaseEditMode(on) {
-      document.getElementById('showcase-save-draft').classList.toggle('hidden', on);
-      showcaseForm.querySelector('.btn-haul-primary').textContent = on ? 'Save Changes' : 'Post to Showcase';
-      document.getElementById('post-showcase-title').textContent = on ? 'Edit Your Listing' : 'List on Your Showcase';
-    }
-
-    // These three were missing: the X, clicking outside, and Escape never closed this modal.
-    document.getElementById('post-showcase-close').addEventListener('click', closePostShowcaseModal);
-    showcaseModal.addEventListener('click', (e) => { if (e.target === showcaseModal) closePostShowcaseModal(); });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && showcaseModal.classList.contains('active')) closePostShowcaseModal();
-    });
-
-    function openShowcaseDraft(d) {
-      resetShowcaseForm();
-      editingShowcaseDraftId = d.id;
-      editingShowcaseDraftImage = d.image_path || null;
-      document.getElementById('showcase-item-name').value = d.item_name || '';
-      document.getElementById('showcase-caption').value = d.description || '';
-      setSellingMethod(d.selling_method || 'bidding');
-      const setVal = (id, v) => { document.getElementById(id).value = v !== null && v !== undefined ? v : ''; };
-      setVal('bid-start-price', d.bid_start_price);
-      setVal('bid-increment', d.bid_increment);
-      setVal('lock-price', d.lock_price);
-      setVal('grab-price', d.grab_price);
-      setVal('mine-price', d.mine_price);
-      setShowcaseSize(d.size);
-      setShowcaseLocation(d.store_id, d.store_name);
-      setVal('showcase-color', d.color);
-      setVal('showcase-fabric', d.fabric);
-      if (d.size || d.color || d.fabric) {
-        showcaseDetailsPanel.classList.add('open');
-        showcaseDetailsToggle.classList.add('open');
-      }
-      if (d.image_path) {
-        showcaseDropzoneBody.innerHTML = `<img class="haul-dropzone-preview" src="${escapeHtml(d.image_path)}" alt="Current photo"><span class="haul-dropzone-filename">Current photo (choose a file to replace it)</span>`;
-        setPreviewMedia(showcasePreviewMedia, d.image_path);
-      }
-      updateShowcasePreview();
-      openPostShowcaseModal();
-    }
-
-    // Edit one of my active listings: reuse the draft-filling code, then switch modes
-    function openShowcaseEdit(item) {
-      openShowcaseDraft(item);
-      editingShowcaseDraftId = null;   // it's not a draft
-      editingShowcaseId = item.id;
-      setShowcaseEditMode(true);
-    }
-
-    async function deleteMyShowcase(item) {
-      if (!confirm('Delete this listing? This can\'t be undone.')) return;
-      try {
-        const res = await apiFetch('api/showcase/delete.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: item.id })
-        });
-        const data = await res.json();
-        if (!data.success) { showToast(data.error || 'Could not delete that listing.', 'error'); return; }
-        showToast('Listing deleted.');
-        await renderShowcase();
-      } catch (err) {
-        showToast('Could not reach the server. Try again.', 'error');
-      }
-    }
-
-    function readPrice(id) {
-      const val = parseFloat(document.getElementById(id).value);
-      return isNaN(val) || val < 0 ? null : val;
-    }
-
-    async function submitShowcase(status) {
-      const isEdit = editingShowcaseId !== null;
-      const isDraft = status === 'draft' && !isEdit;
-      const name = document.getElementById('showcase-item-name').value.trim();
-      const hasImage = !!showcaseMediaInput.files[0] || !!editingShowcaseDraftImage;
-
-      if (isDraft && !name && !hasImage) {
-        showToast('Add a photo or an item name to save a draft.', 'error');
-        return;
-      }
-      if (!isDraft && !name) {
-        alert('Give your listing a name first.');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('status', isDraft ? 'draft' : 'active');
-      formData.append('item_name', name);
-      formData.append('description', document.getElementById('showcase-caption').value.trim());
-      formData.append('selling_method', selectedMethod);
-      formData.append('size', selectedShowcaseSize || '');
-      formData.append('color', document.getElementById('showcase-color').value.trim());
-      formData.append('fabric', document.getElementById('showcase-fabric').value.trim());
-      formData.append('store_id', selectedShowcaseStoreId || '');
-      if (editingShowcaseDraftId !== null) formData.append('draft_id', editingShowcaseDraftId);
-      if (isEdit) formData.append('listing_id', editingShowcaseId);
-
-      if (selectedMethod === 'bidding') {
-        const start = readPrice('bid-start-price');
-        const increment = readPrice('bid-increment');
-        if (!isDraft && (start === null || increment === null)) {
-          alert('Enter both a starting price and a bid increment.');
-          return;
-        }
-        if (start !== null) formData.append('bid_start_price', start);
-        if (increment !== null) formData.append('bid_increment', increment);
-      } else {
-        const price = readPrice(`${selectedMethod}-price`);
-        if (!isDraft && price === null) {
-          alert(`Enter a ${selectedMethod} price.`);
-          return;
-        }
-        if (price !== null) formData.append(`${selectedMethod}_price`, price);
-      }
-
-      if (showcaseMediaInput.files[0]) formData.append('image', showcaseMediaInput.files[0]);
-
-      const actionBtns = showcaseForm.querySelectorAll('.haul-form-actions button');
-      actionBtns.forEach(b => b.disabled = true);
-
-      try {
-        const res = await apiFetch(isEdit ? 'api/showcase/update.php' : 'api/showcase/create.php', { method: 'POST', body: formData });
-        const data = await res.json();
-
-        if (!data.success) {
-          alert(data.error || (isEdit ? 'Could not save your changes.' : (isDraft ? 'Could not save your draft.' : 'Could not post to showcase.')));
-          return;
-        }
-
-        if (!isDraft) await renderShowcase();
-        if (activeTab === 'drafts') renderDrafts();
-
-        resetShowcaseForm();
-        closePostShowcaseModal();
-        showToast(isEdit ? 'Listing updated.' : (isDraft ? 'Draft saved. Find it in My Drafts.' : 'Listed on your showcase!'));
-      } catch (err) {
-        alert('Could not reach the server. Is your PHP backend running?');
-      } finally {
-        actionBtns.forEach(b => b.disabled = false);
-      }
-    }
-
-    showcaseForm.addEventListener('submit', (e) => { e.preventDefault(); submitShowcase('active'); });
-    document.getElementById('showcase-save-draft').addEventListener('click', () => submitShowcase('draft'));
-
     document.addEventListener('click', () => {
       document.querySelectorAll('.card-menu.open').forEach(m => m.classList.remove('open'));
     });
@@ -2905,18 +3558,16 @@ haulLocationMenu.addEventListener('click', (e) => {
     setupDropdown(
       document.getElementById('saved-sort-dropdown-btn'),
       document.getElementById('saved-sort-dropdown-menu'),
-        (item) => {
-      document.querySelectorAll('#saved-sort-dropdown-menu .dropdown-item').forEach(i => i.classList.remove('active'));
+      (item) => {
+        document.querySelectorAll('#saved-sort-dropdown-menu .dropdown-item').forEach(i => i.classList.remove('active'));
         item.classList.add('active');
-      document.getElementById('saved-sort-value-label').textContent = item.textContent;
-      savedSort = item.dataset.value;
-      renderSavedSpots(savedSort === 'nearby');
-    });
-
-    document.getElementById('showcase-add-card').addEventListener('click', openPostShowcaseModal);
+        document.getElementById('saved-sort-value-label').textContent = item.textContent;
+        savedSort = item.dataset.value;
+        renderSavedSpots(savedSort === 'nearby');
+      });
 
     function setTab(tab) {
-      activeTab = ['spots', 'showcase', 'drafts', 'saved'].includes(tab) ? tab : 'hauls';
+      activeTab = ['spots', 'drafts', 'saved'].includes(tab) ? tab : 'hauls';
       tabsContainer.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.tab === activeTab));
       render();
     }
@@ -3001,14 +3652,10 @@ haulLocationMenu.addEventListener('click', (e) => {
     });
 
     document.getElementById('add-item-btn').addEventListener('click', () => {
-      if (activeTab === 'showcase') {
-        openPostShowcaseModal();
-      } else {
-        openPostHaulModal();
-      }
+      openPostHaulModal();
     });
 
-        // Only re-render the tab that's actually showing. They all share one
+    // Only re-render the tab that's actually showing. They all share one
     // "Nothing here yet" message, so refreshing a hidden tab would flip it on.
     views['profile'].refreshHauls = () => { if (activeTab === 'hauls') renderHauls(); };
     views['profile'].refreshSavedSpots = () => { if (activeTab === 'spots') renderSavedSpots(); };

@@ -1,7 +1,7 @@
 <?php
 /**
  * POST /api/auth/register.php
- * Body (JSON): { username, email, password, confirm_password }
+ * Body (JSON): { username, email, password, confirm_password, accept_terms }
  * On success: creates the account, logs the user in immediately
  * (same as your current fake signup flow does), and returns the
  * new user's public fields.
@@ -54,6 +54,11 @@ if (strlen($password) > 72) {
 }
 if ($password !== $confirmPassword) {
     json_error('Passwords do not match.');
+}
+// The sign-up form's checkbox sends accept_terms: true. Checked here too so
+// the rule can't be skipped by calling the API directly.
+if (($input['accept_terms'] ?? false) !== true) {
+    json_error('Please agree to the Terms of Service and Privacy Policy to create an account.');
 }
 
 // ---- Uniqueness check ----

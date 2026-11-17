@@ -25,7 +25,8 @@ $lat    = isset($_GET['lat']) ? (float) $_GET['lat'] : null;
 $lng    = isset($_GET['lng']) ? (float) $_GET['lng'] : null;
 $random = !empty($_GET['random']);
 
-$sql = 'SELECT id, name, latitude, longitude, status_text, rating, rating_count, price_range, address, image_path FROM stores';
+$sql = 'SELECT id, name, latitude, longitude, status_text, rating, rating_count, price_range, address, image_path,
+        (SELECT COUNT(*) FROM hauls h WHERE h.store_id = stores.id AND h.status = \'published\') AS haul_count FROM stores';
 $params = [];
 
 if ($search !== '') {
@@ -84,6 +85,7 @@ foreach ($stores as &$store) {
     $store['my_rating'] = $myRatings[$store['id']] ?? null;
     $store['rating']        = (float) $store['rating'];
     $store['rating_count']  = (int) $store['rating_count'];
+    $store['haul_count']    = (int) $store['haul_count'];
     $store['latitude']      = (float) $store['latitude'];
     $store['longitude']     = (float) $store['longitude'];
 

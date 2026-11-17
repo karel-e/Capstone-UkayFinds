@@ -1,7 +1,7 @@
 <?php
 /**
  * POST /api/drafts/delete.php
- * Body (JSON): { type: 'haul' | 'showcase', id }
+ * Body (JSON): { type: 'haul', id }
  * Only ever deletes the caller's own drafts, never published items.
  */
 require_once __DIR__ . '/../config.php';
@@ -18,9 +18,9 @@ $input = json_decode(file_get_contents('php://input'), true) ?? [];
 $type  = $input['type'] ?? '';
 $id    = isset($input['id']) ? (int) $input['id'] : 0;
 
-// Whitelisted, so it's safe to put in the SQL string
-$table = $type === 'haul' ? 'hauls' : ($type === 'showcase' ? 'showcase_listings' : null);
-if ($table === null || $id <= 0) {
+// Only haul drafts exist now; the table name is fixed, never taken from the request
+$table = 'hauls';
+if ($type !== 'haul' || $id <= 0) {
     json_error('Invalid request.');
 }
 

@@ -1,11 +1,23 @@
-# Secrets / config
+# Secrets / config (config.php has no secrets any more, so it IS committed)
 .env
-config.php
 api/test-connection.php
 api/config.local.php
 
-# User uploads
-uploads/
+# Database dumps hold real emails and password hashes. NEVER commit them.
+# (Small migration_*.sql files with no personal data are fine to commit.)
+database/*full*.sql
+database/*dump*.sql
+database/*backup*.sql
+database/*export*.sql
+database/*.sql.zip
+database/*.sql.gz
+database/migration_stall_*.sql
+
+# User uploads (keep the .htaccess that blocks PHP in that folder)
+uploads/*
+!uploads/.htaccess
+!uploads/*/
+uploads/*/*
 
 # Logs and system files
 *.log

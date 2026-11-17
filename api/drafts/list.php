@@ -1,7 +1,7 @@
 <?php
 /**
  * GET /api/drafts/list.php
- * The logged-in user's unpublished hauls and showcase listings, newest first.
+ * The logged-in user's unpublished hauls (drafts), newest first.
  */
 require_once __DIR__ . '/../config.php';
 
@@ -31,25 +31,4 @@ foreach ($hauls as &$h) {
 }
 unset($h);
 
-$stmt = $pdo->prepare("
-    SELECT sl.id, sl.item_name, sl.description, sl.image_path, sl.selling_method,
-           sl.bid_start_price, sl.bid_increment, sl.lock_price, sl.grab_price, sl.mine_price,
-           sl.size, sl.color, sl.fabric, sl.store_id, sl.created_at,
-           s.name AS store_name
-    FROM showcase_listings sl
-    LEFT JOIN stores s ON s.id = sl.store_id
-    WHERE sl.user_id = ? AND sl.status = 'draft'
-    ORDER BY sl.created_at DESC
-");
-$stmt->execute([$userId]);
-$showcase = $stmt->fetchAll();
-foreach ($showcase as &$d) {
-    $d['id'] = (int) $d['id'];
-    $d['store_id'] = $d['store_id'] !== null ? (int) $d['store_id'] : null;
-    foreach (['bid_start_price', 'bid_increment', 'lock_price', 'grab_price', 'mine_price'] as $f) {
-        $d[$f] = $d[$f] !== null ? (float) $d[$f] : null;
-    }
-}
-unset($d);
-
-json_response(['hauls' => $hauls, 'showcase' => $showcase]);
+json_response(['hauls' => $hauls]);

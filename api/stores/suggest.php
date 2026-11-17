@@ -131,8 +131,8 @@ if ($hasUpload) {
 // ---- 4. Insert (new spots start unrated: 0 / 0, frontend shows "New") ----
 try {
     $stmt = $pdo->prepare(
-        'INSERT INTO stores (name, latitude, longitude, status_text, rating, rating_count, price_range, address, image_path, submitted_by)
-         VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?, ?)'
+        'INSERT INTO stores (name, latitude, longitude, status_text, rating, rating_count, price_range, address, image_path, submitted_by, reviewed)
+        VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?, ?, 0)'
     );
     $stmt->execute([
         $name,

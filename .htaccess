@@ -1,0 +1,25 @@
+# UkayFinds site root .htaccess (Apache / XAMPP)
+
+# 6.7: nobody can browse a folder's file list
+Options -Indexes
+
+# Never serve dumps, logs, backups or hidden/config files
+<FilesMatch "(^\.|\.(sql|log|bak|md|ini|env|lock|sh)$|^config\.local\.php$)">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# 6.8: allow 5 MB photos (the app checks the 5 MB rule itself, these just must not be lower)
+<IfModule mod_php.c>
+  php_value upload_max_filesize 8M
+  php_value post_max_size 10M
+</IfModule>
+<IfModule mod_php8.c>
+  php_value upload_max_filesize 8M
+  php_value post_max_size 10M
+</IfModule>

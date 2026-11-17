@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<link rel="stylesheet" href="styles.css?v=12">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=25">
 <title>UkayFinds - Thrift Smarter, Dress Better</title>
 </head>
 <body>
@@ -16,11 +18,12 @@
 
   <header class="site-header">
     <nav>
-      <a href="#hero" class="brand" aria-label="UkayFinds Home">UkayFinds</a>
+      <a href="#hero" class="brand" aria-label="UkayFinds Home"><span>Ukay</span>Finds</a>
       <ul>
         <li><a href="#features">About</a></li>
-        <li><a href="#store-finder">Find A Store</a></li>
+        <li><a href="#store-finder">Find A Stall</a></li>
         <li><a href="#community-hauls">Community</a></li>
+        <li><a href="#for-owners">For stall owners</a></li>
       </ul>
       <a href="#signup" class="open-signup-modal btn-primary">Sign Up</a>
     </nav>
@@ -29,30 +32,32 @@
   <main>
     <!-- SECTION 1: HERO -->
     <section id="hero">
-      <div>
-        <h1>Thrift Smarter, <br>dress better.</h1>
-        <p>Connect with a community of thrifters, locate local spots, and give pre-loved fashion a second story.</p>
-        <div>
-          <a href="#community-hauls" class="btn-primary">Join the Community</a>
-          <a href="#signup" class="open-signup-modal btn-secondary">Find Nearby Stores</a>
+      <div class="hero-copy">
+        <span class="script">thrift smarter</span>
+        <h1>Find your next <br>ukay-ukay stall.</h1>
+        <p>Connect with a community of thrifters in Cebu, find local stalls, and give pre-loved fashion a second story.</p>
+        <div class="hero-actions">
+          <a href="#signup" class="open-signup-modal btn-primary">Find Nearby Stalls</a>
+          <a href="#community-hauls" class="btn-secondary">Join the Community</a>
         </div>
+        <p class="hero-note">Free to use. No payments on this site.</p>
       </div>
 
-      <div>
+      <div class="hero-photos">
         <figure>
           <img src="STOCKIMAGES/img1.jpg" alt="Consolacion Public Market thrift stall with clothes hanging outside"/>
         </figure>
         <figure>
           <img src="STOCKIMAGES/img2.jpg" alt="Thrifter browsing through rack of vintage clothing"/>
           <figcaption class="badge-top-left">
-            <img src="https://api.iconify.design/mdi/map-marker.svg?color=%237c3aed" alt="pin" class="badge-icon"/>
+            <img src="https://api.iconify.design/mdi/map-marker.svg?color=%23C3291D" alt="pin" class="badge-icon"/>
             <p>Consolacion Public Market</p>
           </figcaption>
         </figure>
         <figure>
           <img src="STOCKIMAGES/img3.jpg" alt="Customer sorting through ukay-ukay bins"/>
           <figcaption class="badge-bottom-left">
-            <img src="https://api.iconify.design/mdi/star.svg?color=%237c3aed" alt="star" class="badge-icon">
+            <img src="https://api.iconify.design/mdi/star.svg?color=%23F5B91A" alt="star" class="badge-icon">
             <p>4.5 | Community-rated spots</p>
           </figcaption>
         </figure>
@@ -62,45 +67,48 @@
       </div>
     </section>
 
-    <!-- SECTION 2: FEATURES -->
+    <!-- SECTION 2: HOW IT WORKS / FEATURES -->
     <section id="features">
-      <div>
-        <p>WHY UKAYFINDS?</p>
+      <div class="section-head">
+        <span class="script">why ukayfinds?</span>
         <h2>Everything you need to hunt local gems.</h2>
-        <p>From locating hidden street spots to sharing your best thrift hauls.</p>
+        <p>From finding hidden stalls to sharing your best thrift hauls.</p>
       </div>
-      <div>
+      <div class="feature-grid">
         <article>
+          <span class="step-no">1</span>
           <div class="pin">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 7.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="9" r="3"/></svg>
           </div>
-          <h3>Pinpoint Local Spots</h3>
-          <p>Locate hidden ukay-ukay spots near you with directions and store hours.</p>
+          <h3>Pinpoint Local Stalls</h3>
+          <p>Locate hidden ukay-ukay stalls near you with directions and opening hours.</p>
         </article>
         <article>
+          <span class="step-no">2</span>
           <div class="pin">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h10M7 12h10M7 17h6"/></svg>
           </div>
           <h3>Match Your Vibe</h3>
-          <p>Get personalized store recommendations based on your style and budget.</p>
+          <p>Get stall picks based on your style and budget, and see when fresh bale arrives.</p>
         </article>
         <article>
+          <span class="step-no">3</span>
           <div class="pin">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </div>
-          <h3>Real Reviews & Fit Pics</h3>
-          <p>See honest shop ratings, browse outfit photos, and share your best finds.</p>
+          <h3>Real Reviews &amp; Fit Pics</h3>
+          <p>See honest stall ratings, browse outfit photos, and share your best finds.</p>
         </article>
       </div>
     </section>
 
     <!-- SECTION 3: INTERACTIVE STORE FINDER (preview map, logged-out) -->
     <section id="store-finder">
-      <div>
-        <p>INTERACTIVE STORE FINDER</p>
-        <h2>Find Hidden Ukay Spots Right In Your Neighborhood</h2>
-        <p>Search by city, street market, or budget. Get exact directions, operating hours, and restock alerts before you travel.</p>
-        <a href="#signup" class="open-signup-modal">Launch Store Finder &rarr;</a>
+      <div class="finder-copy">
+        <span class="script">interactive stall finder</span>
+        <h2>Find hidden ukay stalls right in your neighborhood</h2>
+        <p>Search by city, street market, or budget. Get exact directions, opening hours, and fresh bale alerts before you travel.</p>
+        <a href="#signup" class="open-signup-modal btn-primary">Launch Stall Finder &rarr;</a>
       </div>
       <div class="map-wrapper">
         <div id="map"></div>
@@ -109,16 +117,16 @@
 
     <!-- SECTION 4: REAL THRIFT HAULS -->
     <section id="community-hauls">
-      <div>
-        <p>REAL THRIFT HAULS</p>
-        <h2>See What Thrifters Are Finding Today.</h2>
-        <p>Real photos, price breakdowns, and store tags shared by local thrifters.</p>
+      <div class="section-head">
+        <span class="script">real thrift hauls</span>
+        <h2>See what thrifters are finding today.</h2>
+        <p>Real photos, price breakdowns, and stall tags shared by local thrifters.</p>
         <p class="sample-note">Sample hauls shown below. Create a free account and share yours in the Community Feed.</p>
       </div>
 
       <div class="haul-grid">
         <article>
-          <figure><img src="https://placehold.co/300x300/f3e8ff/7c3aed?text=Outfit+1" alt="Overall thrift fit check by @fitbymitz"/></figure>
+          <figure><img src="https://placehold.co/300x300/F0E2C0/C3291D?text=Outfit+1" alt="Overall thrift fit check by @fitbymitz"/></figure>
           <div>
             <div><span>@fitbymitz</span><span>Overall</span></div>
             <p>outfit check &middot; Consolacion Public Market</p>
@@ -126,7 +134,7 @@
           </div>
         </article>
         <article>
-          <figure><img src="https://placehold.co/300x300/f3e8ff/7c3aed?text=Outfit+2" alt="Knitted jacket fit check by @fitme"/></figure>
+          <figure><img src="https://placehold.co/300x300/DCEBDD/3E7D4F?text=Outfit+2" alt="Knitted jacket fit check by @fitme"/></figure>
           <div>
             <div><span>@fitme</span><span>Knitted Jacket</span></div>
             <p>outfit check &middot; ThriftLift, Consolacion</p>
@@ -134,7 +142,7 @@
           </div>
         </article>
         <article>
-          <figure><img src="https://placehold.co/300x300/f3e8ff/7c3aed?text=Outfit+3" alt="Overall outfit check by @outfitoftheday"/></figure>
+          <figure><img src="https://placehold.co/300x300/A0B3D0/2A5D91?text=Outfit+3" alt="Overall outfit check by @outfitoftheday"/></figure>
           <div>
             <div><span>@outfitoftheday</span><span>Overall</span></div>
             <p>outfit check &middot; Ukay-Ukay ni Aa</p>
@@ -144,15 +152,32 @@
       </div>
 
       <div class="haul-footer">
-        <a href="#community-hauls">View More Community Hauls &rarr;</a>
+        <a href="#signup" class="open-signup-modal btn-secondary">View More Community Hauls &rarr;</a>
       </div>
     </section>
 
-    <!-- SECTION 5: CTA BANNER -->
+    <!-- SECTION 5: FOR STALL OWNERS -->
+    <section id="for-owners">
+      <div class="owners-card">
+        <div>
+          <span class="script">own a stall?</span>
+          <h2>Get more people to your stall</h2>
+          <p>It is free. Shoppers in Consolacion and Liloan find you, then walk in. Post fresh bale, take holds, give stamps.</p>
+          <a href="#signup" class="open-signup-modal btn-dark" data-intent="owner">I own a stall</a>
+        </div>
+        <ul class="owner-perks">
+          <li><b>Tell people about bale day</b><span>Post it. Shoppers get a reminder.</span></li>
+          <li><b>Let them hold a piece</b><span>They keep it for 24 hours, then they come.</span></li>
+          <li><b>Give visitors a stamp card</b><span>Come 5 times, get your reward.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- SECTION 6: CTA BANNER -->
     <section id="cta-banner">
       <div>
-        <h2>Ready to Find Your Next Thrift Gem?</h2>
-        <p>Join local thrifters discovering hidden spots near you.</p>
+        <h2>Ready to find your next thrift gem?</h2>
+        <p>Join local thrifters discovering hidden stalls near you.</p>
         <a href="#signup" class="open-signup-modal btn-primary">Create Free Account</a>
       </div>
     </section>
@@ -184,8 +209,14 @@
           <div class="form-group">
             <label for="signup-confirm">Confirm Password</label>
             <input type="password" id="signup-confirm" placeholder="Confirm password" required />
-            <span class="form-error" id="signup-error"></span>
           </div>
+          <label class="terms-check" for="signup-terms">
+            <input type="checkbox" id="signup-terms" />
+            <span>I have read and agree to the
+              <a href="landing.html#terms" target="_blank" rel="noopener">Terms of Service</a> and
+              <a href="landing.html#privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+          </label>
+          <span class="form-error" id="signup-error"></span>
           <button type="submit" class="btn-submit">Create Account</button>
         </form>
         <div class="signup-footer">
@@ -223,14 +254,14 @@
   <footer class="site-footer">
     <div class="footer-top">
       <div>
-        <a href="#hero" class="brand" aria-label="UkayFinds Home">UkayFinds</a>
-        <p>Connecting local thrifters, one spot at a time.</p>
+        <a href="#hero" class="brand" aria-label="UkayFinds Home"><span>Ukay</span>Finds</a>
+        <p>Connecting local thrifters, one stall at a time.</p>
       </div>
       <nav aria-label="Footer Navigation">
         <div>
           <h3>EXPLORE</h3>
           <ul>
-            <li><a href="#signup" class="open-signup-modal">Find Stores</a></li>
+            <li><a href="#signup" class="open-signup-modal">Find Stalls</a></li>
             <li><a href="#community-hauls">Community Hauls</a></li>
             <li><a href="#features">About Us</a></li>
           </ul>
@@ -259,13 +290,16 @@
 
   <header class="app-header">
     <div class="app-header-inner">
-    <div class="brand-logo">UkayFinds</div>
+    <div class="brand-logo"><span>Ukay</span>Finds<i class="admin-tag">admin</i></div>
 
-    <nav class="app-nav">
-      <a href="#" class="nav-link" data-view="find-a-store">Find A Store</a>
-      <a href="#" class="nav-link" data-view="community-feed">Community Feed</a>
-      <a href="#" class="nav-link" data-view="notifications">Notifications</a>
+    <nav class="app-nav" aria-label="Main">
+      <a href="#" class="nav-link" data-view="find-a-store"><i class="ni">&#9906;</i><span>Find a Stall</span></a>
+      <a href="#" class="nav-link" data-view="fresh-bale"><i class="ni">&#10022;</i><span>Fresh Bale</span></a>
+      <a href="#" class="nav-link" data-view="community-feed"><i class="ni">&#9829;</i><span>Community</span></a>
+      <a href="#" class="nav-link" data-view="notifications"><i class="ni">&#9835;</i><span>Notifications</span></a>
     </nav>
+
+    <div class="lang-pill" aria-label="Language"><b>EN</b> | Bisaya</div>
 
     <div class="user-menu-container">
       <button id="user-avatar-btn" class="avatar-btn" aria-haspopup="true" aria-expanded="false">R</button>
@@ -279,8 +313,11 @@
         </div>
         <hr>
         <ul class="dropdown-links">
-          <li><a href="#" data-view="profile" data-tab="spots"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved Spots</a></li>
-          <li><a href="#" data-view="profile" data-tab="hauls"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 8h8M8 16h5"/></svg> My Shared Hauls</a></li>
+          <li><a href="#" data-view="profile" data-tab="hauls"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 8h8M8 16h5"/></svg> My Profile</a></li>
+          <li><a href="#" data-view="profile" data-tab="spots"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg> Saved Stalls</a></li>
+          <li><a href="#" data-view="trail"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> My stamp card</a></li>
+          <li><a href="#" data-view="seller"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/></svg> I own a stall</a></li>
+          <li id="admin-link-item" class="hidden"><a href="#" data-view="admin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg> Admin dashboard</a></li>
         </ul>
         <hr>
         <a href="#" id="logout-btn" class="logout-link">
@@ -296,8 +333,9 @@
   <div id="find-a-store-view" class="dash-view hidden">
     <main class="store-main-container">
       <div class="store-hero-center">
+        <span class="script">near you</span>
         <h2>Find Your Next Local Thrift Gem</h2>
-        <p>Locate local ukay-ukay shops, operating hours and community spots near you.</p>
+        <p>Locate local ukay-ukay stalls, opening hours and community spots near you.</p>
 
         <div class="search-input-wrapper">
           <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
@@ -331,6 +369,9 @@
           <p class="radius-note hidden" id="radius-note">No spots within a 30-minute ride — showing the closest ones anyway.</p>
 
           <div class="store-cards-list" id="store-cards-list"><!-- populated by JS --></div>
+
+          <!-- Stall details panel: opens when a stall is picked, fills in from api/stores/get.php -->
+          <div class="store-detail hidden" id="store-detail"></div>
         </div>
 
         <div class="store-map-container">
@@ -357,6 +398,7 @@
   <div id="community-feed-view" class="dash-view hidden">
     <main class="feed-main-container">
       <div class="feed-hero">
+        <span class="script">community</span>
         <h2>Thrift Hauls &amp; Community Feed</h2>
         <p>Discover outfit inspirations, price breakdowns, and local gems shared by thrifters.</p>
       </div>
@@ -405,6 +447,7 @@
           <div class="dropdown-menu" id="filter-dropdown-menu">
             <button type="button" class="dropdown-item" data-filter="comment">Comments</button>
             <button type="button" class="dropdown-item" data-filter="like">Likes</button>
+            <button type="button" class="dropdown-item" data-filter="rating">Ratings</button>
             <button type="button" class="dropdown-item" data-filter="spot">New Spots</button>
           </div>
         </div>
@@ -496,7 +539,6 @@
       <div class="profile-tabs" id="profile-tabs">
         <button type="button" class="pill active" data-tab="hauls">My Hauls</button>
         <button type="button" class="pill" data-tab="spots">My Saved Spots</button>
-        <button type="button" class="pill" data-tab="showcase">My Showcase</button>
         <button type="button" class="pill" data-tab="drafts">My Drafts</button>
       </div>
 
@@ -523,23 +565,6 @@
         <div class="saved-spots-list" id="saved-spots-list"><!-- populated by JS --></div>
       </div>
 
-      <!-- ===================== MY SHOWCASE ===================== -->
-      <div class="showcase-panel hidden" id="showcase-panel">
-        <!-- Empty state: shown when the user has no showcase listings yet -->
-        <div class="showcase-empty hidden" id="showcase-empty">
-          <button type="button" class="showcase-add-card" id="showcase-add-card">
-            <span class="showcase-add-title">List your first ukay item</span>
-            <span class="showcase-add-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-            </span>
-            <span class="showcase-add-label">Add to showcase</span>
-            <span class="showcase-add-sub">Share your ukay-ukay finds or open your shop showcase</span>
-          </button>
-        </div>
-        <!-- Populated state: masonry grid of showcase listings -->
-        <div class="showcase-masonry hidden" id="showcase-masonry"><!-- populated by JS --></div>
-      </div>
-
       <div class="drafts-panel hidden" id="drafts-panel">
         <div class="drafts-list" id="drafts-list"><!-- populated by JS --></div>
           <p class="no-items hidden" id="no-drafts">No drafts yet. Hit "Save as Draft" while posting and it will show up here.</p>
@@ -554,122 +579,357 @@
     </button>
   </div>
 
-  <!-- ===================== POST HAUL MODAL ===================== -->
-  <!-- Shared across views (Community Feed's "+" and Profile's "+") — lives
-       outside the 4 .dash-view divs so it's reachable from any of them. -->
-  <div class="modal-overlay" id="post-haul-modal" aria-hidden="true">
-    <div class="post-modal-shell">
+  <!-- ===================== FRESH BALE ===================== -->
+  <div id="fresh-bale-view" class="dash-view hidden">
+    <main class="feed-main-container">
+      <div class="feed-hero bale-hero">
+        <span class="script">this week</span>
+        <h2>Fresh bale</h2>
+        <p>See which stall has new stock today, what is on sale, and when to go.</p>
+      </div>
 
-      <div class="haul-form-card post-form-card">
-        <div class="haul-form-header">
-          <div>
-            <h2 id="post-haul-title">Share your Ukay Haul</h2>
-            <p>Show off your thrift finds and tag where you found them!</p>
+      <div class="bale-filters">
+        <div class="filter-pills" id="bale-city-pills" aria-label="City">
+          <button type="button" class="pill active" data-city="all">All cities</button>
+          <button type="button" class="pill" data-city="Consolacion">Consolacion</button>
+          <button type="button" class="pill" data-city="Liloan">Liloan</button>
+        </div>
+        <span class="bale-sep" aria-hidden="true"></span>
+        <div class="filter-pills" id="bale-day-pills" aria-label="When">
+          <button type="button" class="pill active" data-day="all">All days</button>
+          <button type="button" class="pill" data-day="today">Today</button>
+          <button type="button" class="pill" data-day="tomorrow">Tomorrow</button>
+          <button type="button" class="pill" data-day="weekend">This weekend</button>
+        </div>
+      </div>
+
+      <div class="bale-grid" id="bale-grid"><!-- filled in by initFreshBale() in scripts.js -->
+        <article class="bale-card" data-city="Consolacion" data-day="weekend" data-tags="new open">
+          <div class="bale-photo" style="background:#A0B3D0"></div>
+          <div class="bale-body">
+            <div class="bale-tags"><span class="bd bd-yellow">New stock</span><span class="bd bd-green">Open now</span></div>
+            <h3>Ukay-Ukay ni Aa</h3>
+            <p>Consolacion &middot; Bale day Saturday, 7 AM</p>
+            <button type="button" class="bale-see" data-store-id="1" data-store-name="Ukay-Ukay ni Aa">See this stall</button>
           </div>
-          <button type="button" class="haul-form-close" id="post-haul-close" aria-label="Close">&times;</button>
+        </article>
+        <article class="bale-card" data-city="Liloan" data-day="tomorrow" data-tags="new later">
+          <div class="bale-photo" style="background:#E8B7A8"></div>
+          <div class="bale-body">
+            <div class="bale-tags"><span class="bd bd-yellow">New stock</span><span class="bd bd-brown">Opens tomorrow</span></div>
+            <h3>Aling Rosa Ukay</h3>
+            <p>Liloan &middot; Bale day Sunday</p>
+            <button type="button" class="bale-see" data-store-id="2" data-store-name="Aling Rosa Ukay">See this stall</button>
+          </div>
+        </article>
+        <article class="bale-card" data-city="Consolacion" data-day="today" data-tags="sale open">
+          <div class="bale-photo" style="background:#B7D3B5"></div>
+          <div class="bale-body">
+            <div class="bale-tags"><span class="bd bd-blue">Sale</span><span class="bd bd-green">Open now</span></div>
+            <h3>Mang Ben Ukay</h3>
+            <p>Consolacion &middot; 3 for ₱150 today</p>
+            <button type="button" class="bale-see" data-store-id="3" data-store-name="Mang Ben Ukay">See this stall</button>
+          </div>
+        </article>
+        <article class="bale-card" data-city="Liloan" data-day="weekend" data-tags="new">
+          <div class="bale-photo" style="background:#F0E2C0"></div>
+          <div class="bale-body">
+            <div class="bale-tags"><span class="bd bd-yellow">New stock</span></div>
+            <h3>Tindahan ni Nena</h3>
+            <p>Liloan &middot; Kids bale Friday</p>
+            <button type="button" class="bale-see" data-store-id="4" data-store-name="Tindahan ni Nena">See this stall</button>
+          </div>
+        </article>
+      </div>
+      <p class="no-items hidden" id="no-bale">No fresh bale for this filter yet. Check back soon.</p>
+
+      <div class="trail-banner">
+        <div><span class="script">Ukay Trail</span><h2>Visit 5 stalls. Collect stamps. Win a reward.</h2></div>
+        <button type="button" class="btn-dark" id="join-trail-btn">Join the trail</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ===================== UKAY TRAIL (stamp card) ===================== -->
+  <div id="trail-view" class="dash-view hidden">
+    <main class="feed-main-container">
+      <div class="feed-hero bale-hero">
+        <span class="script">collect stamps</span>
+        <h2>Ukay Trail</h2>
+        <p>Visit real stalls and tap "I'm here" when you arrive to get a stamp. Finish a trail to earn a reward that the stalls give you in person. No payment on this site.</p>
+      </div>
+      <div class="trail-list" id="trail-list"><!-- filled in by initTrail() in scripts.js --></div>
+      <p class="no-items hidden" id="no-trail">No trails are open right now. Check back soon.</p>
+    </main>
+  </div>
+
+  <!-- ===================== STALL OWNER DASHBOARD (new view) ===================== -->
+  <div id="seller-view" class="dash-view hidden">
+    <main class="dash-main">
+      <aside class="dash-side" id="seller-side">
+        <button type="button" class="side-item active" data-seller-tab="home">Home</button>
+        <button type="button" class="side-item" data-seller-tab="bale">Post fresh bale</button>
+        <button type="button" class="side-item" data-seller-tab="finds">Add a find</button>
+        <button type="button" class="side-item" data-seller-tab="holds">Holds <span class="count-badge" id="seller-holds-badge">2</span></button>
+        <button type="button" class="side-item" data-seller-tab="stall">My stall</button>
+        <button type="button" class="side-item" data-seller-tab="poster">QR poster and stamps</button>
+      </aside>
+      <section class="dash-content">
+        <div class="dash-title"><span class="script">good day,</span><h2 id="seller-stall-name">Aling Rosa Ukay</h2></div>
+        <div class="stat-row">
+          <div class="stat-box s-green"><b id="seller-stat-views">12</b>Looked at your stall</div>
+          <div class="stat-box s-tan"><b id="seller-stat-dirs">5</b>Asked for directions</div>
+          <div class="stat-box s-mint"><b id="seller-stat-scans">8</b>Came by and scanned</div>
+          <div class="stat-box s-yellow"><b id="seller-stat-holds">2</b>Holds waiting</div>
+        </div>
+        <div class="action-grid">
+          <button type="button" class="act act-red" data-seller-tab="bale">Post fresh bale or a deal</button>
+          <button type="button" class="act act-yellow" data-seller-tab="finds">Add a piece to Best finds</button>
+          <button type="button" class="act act-ink" data-seller-tab="holds">See holds</button>
+          <button type="button" class="act" data-seller-tab="poster">Print my QR poster</button>
+        </div>
+        <div class="two-col">
+          <div class="panel-card"><h3>Holds waiting</h3><div class="list-rows" id="seller-holds-list">
+            <div class="row"><span><b>Mika</b> · Denim jacket</span><b class="code">UKY-4821</b></div>
+            <div class="row"><span><b>Jen</b> · Band shirt</span><b class="code">UKY-1307</b></div>
+          </div></div>
+          <div class="note-card"><h3>What worked</h3><p>Your "Fresh bale Saturday" post got the most looks. Posting before bale day brings people in.</p></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ===================== ADMIN DASHBOARD ===================== -->
+  <div id="admin-view" class="dash-view hidden">
+    <main class="dash-main">
+      <aside class="dash-side" id="admin-side">
+        <button type="button" class="side-item active" data-admin-tab="overview">Overview</button>
+        <button type="button" class="side-item" data-admin-tab="stalls">Stalls <span class="count-badge hidden" id="admin-badge-stalls">0</span></button>
+        <button type="button" class="side-item" data-admin-tab="users">Users</button>
+        <button type="button" class="side-item" data-admin-tab="reports">Reports <span class="count-badge hidden" id="admin-badge-reports">0</span></button>
+      </aside>
+
+      <section class="dash-content">
+        <div class="dash-title"><span class="script" id="admin-kicker">this week</span><h2 id="admin-title">Admin overview</h2></div>
+
+        <!-- Overview -->
+        <div class="admin-panel" id="admin-panel-overview">
+          <div class="stat-row">
+            <button type="button" class="stat-box" data-admin-stat="stalls"><b id="admin-stat-stalls">–</b>Stalls listed</button>
+            <button type="button" class="stat-box" data-admin-stat="users"><b id="admin-stat-users">–</b>Shoppers</button>
+            <button type="button" class="stat-box" data-admin-stat="hauls"><b id="admin-stat-hauls">–</b>Hauls posted</button>
+            <button type="button" class="stat-box" data-admin-stat="pending"><b id="admin-stat-pending">–</b>Waiting for review</button>
+          </div>
+          <p class="stat-hint" id="admin-stat-hint">Tap a number to see the list.</p>
+          <p class="stat-hint trail-line" id="admin-trail-line"></p>
+          <div class="panel-card hidden" id="admin-detail">
+            <div class="detail-head"><h3 id="admin-detail-title"></h3><button type="button" class="mini-btn" data-admin-stat-close>Close</button></div>
+            <div class="list-rows" id="admin-detail-list"></div>
+          </div>
+          <div class="two-col two-col-wide" id="admin-overview-cols">
+            <div class="panel-card"><h3>Suggested stalls to review</h3><div class="list-rows" id="admin-suggested-list"></div></div>
+            <div class="panel-card"><h3>Reported hauls and comments</h3><div class="list-rows" id="admin-reports-list"></div>
+              <button type="button" class="mini-btn wide" data-admin-tab="reports">Open reports</button></div>
+          </div>
         </div>
 
-        <form id="post-haul-form" novalidate>
-          <div class="haul-form-section">
-            <label for="haul-media-input">Haul Media Upload</label>
-            <label class="haul-dropzone" id="haul-dropzone" for="haul-media-input">
-              <input type="file" id="haul-media-input" accept="image/png,image/jpeg" hidden>
-              <div class="haul-dropzone-body" id="haul-dropzone-body">
-                <div class="haul-dropzone-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        <!-- Stalls -->
+        <div class="admin-panel hidden" id="admin-panel-stalls">
+          <div class="panel-card"><h3>All stalls</h3><div class="list-rows" id="admin-stalls-list"></div></div>
+        </div>
+
+        <!-- Reports -->
+        <div class="admin-panel hidden" id="admin-panel-reports">
+          <div class="panel-card"><h3>Open reports</h3><div class="list-rows" id="admin-reports-full"></div></div>
+        </div>
+
+        <!-- Users -->
+        <div class="admin-panel hidden" id="admin-panel-users">
+          <div class="panel-card"><h3>People</h3><div class="list-rows" id="admin-users-list"></div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ===================== POST HAUL PAGE =====================
+       Replaces the old #post-haul-modal. A full page (like Profile / Notifications),
+       reachable from Community Feed's "+" and Profile's "+" and "Continue" on drafts.
+       All the element ids the JS uses (haul-caption, haul-amount, haul-media-input,
+       haul-size-*, haul-location-*, haul-preview-*) are kept. -->
+  <div id="post-haul-view" class="dash-view hidden">
+    <main class="post-page-container">
+
+      <div class="post-page-head">
+        <button type="button" class="up-back" id="post-haul-close">&larr; Back</button>
+        <h2 id="post-haul-title">Share your Ukay Haul</h2>
+        <p>Show off your thrift finds and tag where you found them!</p>
+      </div>
+
+      <div class="post-page-grid">
+
+        <!-- ================= LEFT: THE FORM ================= -->
+        <form id="post-haul-form" class="post-page-form" novalidate>
+
+          <section class="post-section-card">
+            <div class="haul-form-section">
+              <label for="haul-media-input">Haul Media Upload</label>
+              <label class="haul-dropzone" id="haul-dropzone" for="haul-media-input">
+                <input type="file" id="haul-media-input" accept="image/png,image/jpeg" hidden>
+                <div class="haul-dropzone-body" id="haul-dropzone-body">
+                  <div class="haul-dropzone-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                  </div>
+                  <p class="haul-dropzone-text">Click or drag a photo to upload<br><span>(PNG, JPG)</span></p>
                 </div>
-                <p class="haul-dropzone-text">Click or drag a photo to upload<br><span>(PNG, JPG)</span></p>
-              </div>
-            </label>
-          </div>
+              </label>
+            </div>
 
-          <div class="haul-form-section">
-            <label for="haul-caption">Caption &amp; Thrift Story</label>
-            <textarea id="haul-caption" rows="3" placeholder="Found this vintage jacket for only ₱150..."></textarea>
-          </div>
+            <div class="haul-form-section">
+              <label for="haul-caption">Caption &amp; Thrift Story</label>
+              <textarea id="haul-caption" rows="3" placeholder="Found this vintage jacket for only ₱150..."></textarea>
+            </div>
+          </section>
 
-          <div class="haul-form-section">
+          <section class="post-section-card">
             <div class="specific-details" id="haul-specific-details">
-              <button type="button" class="specific-details-toggle" id="haul-specific-details-toggle">
+              <button type="button" class="specific-details-toggle open" id="haul-specific-details-toggle">
                 <span>Specific Details</span>
                 <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
               </button>
-              <div class="specific-details-panel" id="haul-specific-details-panel">
-                <div class="specific-details-row">
-                  <label>Size</label>
-                  <div class="dropdown" id="haul-size-dropdown">
-                    <button type="button" class="dropdown-trigger form-dropdown-trigger" id="haul-size-dropdown-btn">
-                      <span class="dropdown-trigger-value" id="haul-size-label">Select size</span>
-                      <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <div class="dropdown-menu" id="haul-size-dropdown-menu">
-                      <button type="button" class="dropdown-item" data-value="">Not specified</button>
-                      <button type="button" class="dropdown-item" data-value="XS">XS</button>
-                      <button type="button" class="dropdown-item" data-value="S">S</button>
-                      <button type="button" class="dropdown-item" data-value="M">M</button>
-                      <button type="button" class="dropdown-item" data-value="L">L</button>
-                      <button type="button" class="dropdown-item" data-value="XL">XL</button>
-                      <button type="button" class="dropdown-item" data-value="XXL">XXL</button>
-                      <button type="button" class="dropdown-item" data-value="One Size">One Size</button>
+              <div class="specific-details-panel open" id="haul-specific-details-panel">
+
+                <div class="specific-details-grid">
+                  <div class="specific-details-row">
+                    <label>Size</label>
+                    <div class="dropdown" id="haul-size-dropdown">
+                      <button type="button" class="dropdown-trigger form-dropdown-trigger" id="haul-size-dropdown-btn">
+                        <span class="dropdown-trigger-value" id="haul-size-label">Select size</span>
+                        <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                      </button>
+                      <div class="dropdown-menu" id="haul-size-dropdown-menu">
+                        <div class="dropdown-group-label">Smallest &rarr; Biggest</div>
+                        <button type="button" class="dropdown-item" data-value="XXXS">XXXS</button>
+                        <button type="button" class="dropdown-item" data-value="XXS">XXS</button>
+                        <button type="button" class="dropdown-item" data-value="XS">XS</button>
+                        <button type="button" class="dropdown-item" data-value="S">S</button>
+                        <button type="button" class="dropdown-item" data-value="M">M</button>
+                        <button type="button" class="dropdown-item" data-value="L">L</button>
+                        <button type="button" class="dropdown-item" data-value="XL">XL</button>
+                        <button type="button" class="dropdown-item" data-value="XXL">XXL</button>
+                        <button type="button" class="dropdown-item" data-value="XXXL">XXXL</button>
+                        <div class="dropdown-group-label">Other</div>
+                        <button type="button" class="dropdown-item" data-value="Free size">Free size</button>
+                        <button type="button" class="dropdown-item" data-value="">Not specified</button>
+                        <button type="button" class="dropdown-item" data-value="__other">Other…</button>
+                      </div>
                     </div>
                   </div>
+                  <div class="specific-details-row">
+                    <label for="haul-color">Color</label>
+                    <input type="text" id="haul-color" placeholder="e.g., Faded olive">
+                  </div>
+                  <div class="specific-details-row">
+                    <label for="haul-fabric">Fabric</label>
+                    <input type="text" id="haul-fabric" placeholder="e.g., Cotton">
+                  </div>
                 </div>
-                <div class="specific-details-row">
-                  <label for="haul-color">Color</label>
-                  <input type="text" id="haul-color" placeholder="e.g. Faded olive">
-                </div>
-                <div class="specific-details-row">
-                  <label for="haul-fabric">Fabric</label>
-                  <input type="text" id="haul-fabric" placeholder="e.g. Cotton twill">
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <div class="haul-form-row">
-            <div class="haul-form-section">
-              <label for="haul-amount">Total Spent (Optional)</label>
-              <div class="haul-price-input">
-                <span class="currency-prefix">₱</span>
-                <input type="number" id="haul-amount" min="0" step="1" placeholder="0">
-              </div>
-            </div>
-            <div class="haul-form-section">
-              <label>Tag Thrift Spot</label>
-              <div class="dropdown" id="haul-location-dropdown">
-                <button type="button" class="dropdown-trigger form-dropdown-trigger" id="haul-location-dropdown-btn">
-                  <span class="dropdown-trigger-value" id="haul-location-label">Select Location</span>
-                  <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                <div class="dropdown-menu dropdown-up" id="haul-location-dropdown-menu"><!-- populated by JS --></div>
-              </div>
-            </div>
-          </div>
+                <!-- shown only when "Other…" is picked in the size dropdown -->
+                <div class="specific-details-row hidden" id="haul-size-other-row">
+                  <label for="haul-size-other">Describe the size</label>
+                  <input type="text" id="haul-size-other" maxlength="20" placeholder="e.g., Size 8 (kids), 32 waist, EU 42">
+                </div>
 
-          <div class="haul-form-actions">
+                <div class="measure-box">
+                  <div class="measure-head">
+                    <div>
+                      <label>Measurements <span class="opt">(optional)</span></label>
+                      <p class="measure-sub">Height × Width × Length — helps buyers check the fit</p>
+                    </div>
+                    <div class="unit-toggle" id="haul-unit-toggle" role="group" aria-label="Measurement unit">
+                      <button type="button" class="unit-btn active" data-unit="in">in</button>
+                      <button type="button" class="unit-btn" data-unit="cm">cm</button>
+                    </div>
+                  </div>
+                  <div class="measure-grid">
+                    <div class="measure-field">
+                      <label for="haul-measure-h">Height (H)</label>
+                      <div class="measure-input"><input type="number" id="haul-measure-h" min="0" max="999" step="0.1" placeholder="0"><span class="measure-unit">in</span></div>
+                    </div>
+                    <div class="measure-field">
+                      <label for="haul-measure-w">Width (W)</label>
+                      <div class="measure-input"><input type="number" id="haul-measure-w" min="0" max="999" step="0.1" placeholder="0"><span class="measure-unit">in</span></div>
+                    </div>
+                    <div class="measure-field">
+                      <label for="haul-measure-l">Length (L)</label>
+                      <div class="measure-input"><input type="number" id="haul-measure-l" min="0" max="999" step="0.1" placeholder="0"><span class="measure-unit">in</span></div>
+                    </div>
+                  </div>
+                  <p class="measure-hint" id="haul-measure-hint"></p>
+                </div>
+
+              </div>
+            </div>
+          </section>
+
+          <section class="post-section-card">
+            <div class="haul-form-row">
+              <div class="haul-form-section">
+                <label for="haul-amount">Total Spent (Optional)</label>
+                <div class="haul-price-input">
+                  <span class="currency-prefix">₱</span>
+                  <input type="number" id="haul-amount" min="0" step="1" placeholder="0">
+                </div>
+              </div>
+              <div class="haul-form-section">
+                <label>Tag Thrift Spot</label>
+                <div class="dropdown" id="haul-location-dropdown">
+                  <button type="button" class="dropdown-trigger form-dropdown-trigger" id="haul-location-dropdown-btn">
+                    <span class="dropdown-trigger-value" id="haul-location-label">Select Location</span>
+                    <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+                  </button>
+                  <div class="dropdown-menu" id="haul-location-dropdown-menu"><!-- populated by JS --></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="haul-form-actions post-page-actions">
             <button type="button" class="btn-haul-secondary" id="haul-save-draft">Save as Draft</button>
             <button type="submit" class="btn-haul-primary">Post Haul</button>
           </div>
         </form>
-      </div>
 
-      <div class="post-preview-card">
-        <span class="post-preview-label">Posting Preview</span>
-        <div class="post-preview-media" id="haul-preview-media">
-        <div class="post-preview-empty">Your photo will appear here</div>
-        <div class="post-preview-location hidden" id="haul-preview-location">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>
-          <span id="haul-preview-location-text"></span>
-        </div>
-        <div class="post-preview-overlay">
-          <span class="post-preview-username" id="haul-preview-username">@username</span>
-          <span class="post-preview-price" id="haul-preview-price"></span>
-          <p class="post-preview-caption" id="haul-preview-caption">Your caption will show up here...</p>
-        </div>
+        <!-- ================= RIGHT: PREVIEW, DRAFTS, SHOWCASE PROMO ================= -->
+        <aside class="post-page-side">
+
+          <div class="post-page-preview">
+            <span class="post-preview-label">Haul Preview</span>
+            <div class="post-preview-media" id="haul-preview-media">
+              <div class="post-preview-empty">Your photo will appear here</div>
+              <div class="post-preview-location hidden" id="haul-preview-location">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>
+                <span id="haul-preview-location-text"></span>
+              </div>
+              <div class="post-preview-overlay">
+                <span class="post-preview-username" id="haul-preview-username">@username</span>
+                <span class="post-preview-price" id="haul-preview-price"></span>
+                <p class="post-preview-caption" id="haul-preview-caption">Your caption will show up here...</p>
+              </div>
+            </div>
+            <div class="post-preview-chips" id="haul-preview-chips"></div>
+          </div>
+
+          <div class="post-side-card">
+            <h3 class="post-side-title">My Drafts (<span id="post-drafts-count">0</span>)</h3>
+            <div class="drafts-list" id="post-drafts-list"></div>
+            <p class="no-results hidden" id="post-no-drafts">No drafts yet. Hit "Save as Draft" and it will show up here.</p>
+          </div>
+
+        </aside>
       </div>
-    </div>
+    </main>
   </div>
-</div>
 
   <!-- ===================== HAUL DETAIL MODAL ===================== -->
   <div class="modal-overlay" id="haul-detail-modal" aria-hidden="true">
@@ -679,159 +939,28 @@
     </div>
   </div>
 
-  <!-- ===================== POST TO SHOWCASE MODAL ===================== -->
-  <div class="modal-overlay" id="post-showcase-modal" aria-hidden="true">
-    <div class="post-modal-shell">
-
-      <div class="haul-form-card post-form-card">
-        <div class="haul-form-header">
-          <div>
-            <h2 id="post-showcase-title">List on Your Showcase</h2>
-            <p>Put your ukay find up for bidding, lock, grab, or mine.</p>
-          </div>
-          <button type="button" class="haul-form-close" id="post-showcase-close" aria-label="Close">&times;</button>
+  <!-- ===================== REPORT MODAL ===================== -->
+  <div class="modal-overlay" id="report-modal" aria-hidden="true">
+    <div class="haul-form-card report-card" role="dialog" aria-label="Report">
+      <div class="haul-form-header">
+        <div>
+          <h2 id="report-title">Report this haul</h2>
+          <p>Tell us what is wrong. An admin will take a look.</p>
         </div>
-
-        <form id="post-showcase-form" novalidate>
-          <div class="haul-form-section">
-            <label for="showcase-media-input">Item Media Upload</label>
-            <label class="haul-dropzone" id="showcase-dropzone" for="showcase-media-input">
-              <input type="file" id="showcase-media-input" accept="image/png,image/jpeg" hidden>
-              <div class="haul-dropzone-body" id="showcase-dropzone-body">
-                <div class="haul-dropzone-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-                </div>
-                <p class="haul-dropzone-text">Click or drag a photo to upload<br><span>(PNG, JPG)</span></p>
-              </div>
-            </label>
-          </div>
-
-          <div class="haul-form-section">
-            <label for="showcase-item-name">Item Name</label>
-            <input type="text" id="showcase-item-name" placeholder="Vintage Levi's denim jacket">
-          </div>
-
-          <div class="haul-form-section">
-            <label for="showcase-caption">Description</label>
-            <textarea id="showcase-caption" rows="3" placeholder="Barely worn, great condition..."></textarea>
-          </div>
-
-          <div class="haul-form-section">
-            <div class="specific-details">
-              <button type="button" class="specific-details-toggle" id="showcase-specific-details-toggle">
-                <span>Specific Details</span>
-                <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              <div class="specific-details-panel" id="showcase-specific-details-panel">
-                <div class="specific-details-row">
-                  <label>Size</label>
-                  <div class="dropdown" id="showcase-size-dropdown">
-                    <button type="button" class="dropdown-trigger form-dropdown-trigger" id="showcase-size-dropdown-btn">
-                      <span class="dropdown-trigger-value" id="showcase-size-label">Select size</span>
-                      <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <div class="dropdown-menu" id="showcase-size-dropdown-menu">
-                      <button type="button" class="dropdown-item" data-value="">Not specified</button>
-                      <button type="button" class="dropdown-item" data-value="XS">XS</button>
-                      <button type="button" class="dropdown-item" data-value="S">S</button>
-                      <button type="button" class="dropdown-item" data-value="M">M</button>
-                      <button type="button" class="dropdown-item" data-value="L">L</button>
-                      <button type="button" class="dropdown-item" data-value="XL">XL</button>
-                      <button type="button" class="dropdown-item" data-value="XXL">XXL</button>
-                      <button type="button" class="dropdown-item" data-value="One Size">One Size</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="specific-details-row">
-                  <label for="showcase-color">Color</label>
-                  <input type="text" id="showcase-color" placeholder="e.g. Faded olive">
-                </div>
-                <div class="specific-details-row">
-                  <label for="showcase-fabric">Fabric</label>
-                  <input type="text" id="showcase-fabric" placeholder="e.g. Cotton twill">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="haul-form-section">
-            <label>Selling Method</label>
-            <div class="selling-method-group" id="selling-method-group">
-              <button type="button" class="method-pill active" data-method="bidding">Bidding</button>
-              <button type="button" class="method-pill" data-method="lock">Lock</button>
-              <button type="button" class="method-pill" data-method="grab">Grab</button>
-              <button type="button" class="method-pill" data-method="mine">Mine</button>
-            </div>
-          </div>
-
-          <div class="method-fields" id="method-fields-bidding">
-            <div class="haul-form-row">
-              <div class="haul-form-section">
-                <label for="bid-start-price">Starting Price</label>
-                <div class="haul-price-input"><span class="currency-prefix">₱</span><input type="number" id="bid-start-price" min="0" step="1" placeholder="150"></div>
-              </div>
-              <div class="haul-form-section">
-                <label for="bid-increment">Bid Increment</label>
-                <div class="haul-price-input"><span class="currency-prefix">₱</span><input type="number" id="bid-increment" min="1" step="1" placeholder="20"></div>
-              </div>
-            </div>
-          </div>
-          <div class="method-fields hidden" id="method-fields-lock">
-            <div class="haul-form-section">
-              <label for="lock-price">Lock Price</label>
-              <div class="haul-price-input"><span class="currency-prefix">₱</span><input type="number" id="lock-price" min="0" step="1" placeholder="200"></div>
-            </div>
-          </div>
-          <div class="method-fields hidden" id="method-fields-grab">
-            <div class="haul-form-section">
-              <label for="grab-price">Grab Price</label>
-              <div class="haul-price-input"><span class="currency-prefix">₱</span><input type="number" id="grab-price" min="0" step="1" placeholder="180"></div>
-            </div>
-          </div>
-          <div class="method-fields hidden" id="method-fields-mine">
-            <div class="haul-form-section">
-              <label for="mine-price">Mine Price</label>
-              <div class="haul-price-input"><span class="currency-prefix">₱</span><input type="number" id="mine-price" min="0" step="1" placeholder="250"></div>
-            </div>
-          </div>
-
-          <p class="method-hint" id="method-hint">Buyers place increasing bids until the highest offer wins.</p>
-
-          <div class="haul-form-section">
-            <label>Tag Thrift Spot</label>
-            <div class="dropdown" id="showcase-location-dropdown">
-              <button type="button" class="dropdown-trigger form-dropdown-trigger" id="showcase-location-dropdown-btn">
-                <span class="dropdown-trigger-value" id="showcase-location-label">Select Location</span>
-                <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              <div class="dropdown-menu dropdown-up" id="showcase-location-dropdown-menu"><!-- populated by JS --></div>
-            </div>
-          </div>
-
-          <div class="haul-form-actions">
-            <button type="button" class="btn-haul-secondary" id="showcase-save-draft">Save as Draft</button>
-            <button type="submit" class="btn-haul-primary">Post to Showcase</button>
-          </div>
-        </form>
+        <button type="button" class="haul-form-close" id="report-close" aria-label="Close">&times;</button>
       </div>
-
-      <div class="post-preview-card">
-        <span class="post-preview-label">Listing Preview</span>
-        <div class="post-preview-media" id="showcase-preview-media">
-          <div class="post-preview-empty">Your photo will appear here</div>
-          <span class="showcase-method-badge showcase-method-bidding" id="showcase-preview-badge">bidding</span>
-          <div class="post-preview-location align-right hidden" id="showcase-preview-location">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff"/></svg>
-            <span id="showcase-preview-location-text"></span>
-          </div>
-          <div class="post-preview-overlay">
-            <span class="post-preview-username" id="showcase-preview-name">Item name</span>
-            <span class="post-preview-price" id="showcase-preview-price"></span>
-            <p class="post-preview-caption" id="showcase-preview-caption">Your description will show up here...</p>
-          </div>
+      <form id="report-form" novalidate>
+        <div class="rating-visibility">
+          <label class="visibility-option"><input type="radio" name="report-reason" value="spam" checked> <span>Spam or ads</span></label>
+          <label class="visibility-option"><input type="radio" name="report-reason" value="photo"> <span>Not okay photo</span></label>
+          <label class="visibility-option"><input type="radio" name="report-reason" value="abuse"> <span>Rude or harassing</span></label>
+          <label class="visibility-option"><input type="radio" name="report-reason" value="other"> <span>Something else</span></label>
         </div>
-      </div>
-
+        <div class="haul-form-actions">
+          <button type="button" class="btn-haul-secondary" id="report-cancel">Cancel</button>
+          <button type="submit" class="btn-haul-primary">Send report</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -953,7 +1082,109 @@
 
 </div>
 
+<!-- ======================================================================
+     LEGAL VIEW — Privacy Policy and Terms of Service (opened by #privacy / #terms)
+     ====================================================================== -->
+<div id="legal-view" class="hidden">
+  <header class="site-header">
+    <div class="legal-top">
+      <a class="brand" href="landing.html">Ukay<span>Finds</span></a>
+      <a class="btn btn-primary legal-back" href="#" id="legal-back">&larr; Back to UkayFinds</a>
+    </div>
+  </header>
+  <main class="legal-main">
+    <article class="legal-card" data-legal="privacy">
+      <h1>Privacy Policy</h1>
+      <p class="meta">Last updated: November 2026</p>
+      <p>UkayFinds is a student project: a free directory and community for ukay-ukay stalls in Cebu. We keep this short and plain. There are no payments on UkayFinds, so we never collect card or bank details.</p>
+
+      <h2>What we store</h2>
+      <ul>
+        <li><b>Your account:</b> username, email address, and a scrambled (hashed) version of your password. We can't read your password.</li>
+        <li><b>Your profile:</b> display name, bio and location text, only if you fill them in.</li>
+        <li><b>What you post:</b> hauls and their photos, comments, ratings and reviews, stalls you suggest, stalls and hauls you save, and your Ukay Trail stamps and rewards.</li>
+        <li><b>Notifications</b> sent to you (likes, comments, ratings, new stalls near you).</li>
+        <li><b>Reports</b> you send about a post or comment.</li>
+      </ul>
+
+      <h2>Your location</h2>
+      <ul>
+        <li>We only ask for your location through your browser's permission prompt, and you can say no. Find a Stall still works without it, just without distances.</li>
+        <li>When you allow it, we use it to sort stalls by distance, to draw directions, and to check you are at a stall when you collect a Ukay Trail stamp. The stamp check happens on our server and the exact position is not kept.</li>
+        <li>To tell you when a new stall opens near you, we keep one rounded position (about 100 m accuracy) for your account. It is replaced each time you share a new one.</li>
+      </ul>
+
+      <h2>Why we use it</h2>
+      <p>Only to run the site: sign you in, show your posts, keep the community safe (for example, limiting spam and checking suggested stalls), and send notifications. We don't sell your data and we don't show ads.</p>
+
+      <h2>Who can see what</h2>
+      <ul>
+        <li>Your username, posts, comments and public ratings are visible to other users. A rating posted as anonymous shows as &ldquo;Anonymous thrifter&rdquo;.</li>
+        <li>Your email address and password are never shown to other users.</li>
+        <li>Site admins can see account and moderation information so they can review reports and suggested stalls.</li>
+      </ul>
+
+      <h2>Cookies</h2>
+      <p>We use one cookie that keeps you signed in. It is needed for the site to work, and it is removed when you sign out or close your browser. We don't use advertising or tracking cookies.</p>
+
+      <h2>Third-party services</h2>
+      <p>Maps and directions load from OpenStreetMap-based services (map tiles and routing), and fonts load from Google Fonts. These services can see your IP address when your browser loads them.</p>
+
+      <h2>Keeping it safe</h2>
+      <p>Passwords are hashed, the site is served over HTTPS, and sign-in is limited after repeated wrong passwords. No online service is perfectly secure, so use a password you don't use elsewhere.</p>
+
+      <h2>Deleting your data</h2>
+      <p>You can change your details on your profile at any time. To delete your account and the posts, ratings, stamps and photos linked to it, email us at the address below from the email you signed up with, and we will delete them.</p>
+
+      <h2>Children</h2>
+      <p>UkayFinds is meant for people 13 and older.</p>
+
+      <h2>Contact</h2>
+      <p>Questions or deletion requests: <b>YOUR-CONTACT-EMAIL</b></p>
+      <p class="note">This policy may change as the site grows. When it does, we will update the date at the top.</p>
+    </article>
+    <article class="legal-card hidden" data-legal="terms">
+      <h1>Terms of Service</h1>
+      <p class="meta">Last updated: November 2026</p>
+      <p>By creating an account or using UkayFinds you agree to these terms. They are short on purpose.</p>
+
+      <h2>What UkayFinds is</h2>
+      <p>UkayFinds is a free directory and community that helps people find ukay-ukay stalls in Cebu and share their hauls. It is not a shop. We don't sell, hold or deliver anything, and we don't process payments. Any buying or selling happens in person at the stall, between you and the seller.</p>
+
+      <h2>Your account</h2>
+      <ul>
+        <li>You must give a real email address and keep your password to yourself. You are responsible for what happens under your account.</li>
+        <li>One person, one account. Don't pretend to be someone else.</li>
+      </ul>
+
+      <h2>What you post</h2>
+      <ul>
+        <li>You keep ownership of your photos and words. By posting them you let UkayFinds show them on the site.</li>
+        <li>Only post photos you took or have permission to use, and don't include other people's faces or private details without their OK.</li>
+        <li>Don't post spam, scams, hateful or sexual content, or anything illegal.</li>
+        <li>Reviews should be honest and based on your own visit. No fake or paid reviews.</li>
+      </ul>
+
+      <h2>Suggesting stalls</h2>
+      <p>When you suggest a stall it appears on the map right away as &ldquo;Unverified&rdquo; until an admin checks it. Only suggest real stalls with the right pin. Fake or duplicate stalls may be removed or merged.</p>
+
+      <h2>Ukay Trail</h2>
+      <p>Stamps are given only when you are at the stall. Trying to fake your location, or stamping a stall you did not visit, can lead to your stamps and rewards being removed. Rewards depend on the stalls taking part and can change or end without notice.</p>
+
+      <h2>Moderation</h2>
+      <p>Admins can remove posts, comments, ratings or stalls that break these terms, and can suspend or delete accounts that keep doing so. You can report a post or comment from its menu.</p>
+
+      <h2>No guarantees</h2>
+      <p>Stall details like hours, prices and locations come from the community and may be out of date or wrong. Check before you travel. UkayFinds is provided &ldquo;as is&rdquo;, and we are not responsible for the stalls, the items they sell, or what happens between buyers and sellers.</p>
+
+      <h2>Changes and contact</h2>
+      <p>We may update these terms and will change the date above when we do. Questions: <b>YOUR-CONTACT-EMAIL</b></p>
+      <p class="note">See also our <a href="#privacy">Privacy Policy</a> for what we store about you and how to ask for deletion.</p>
+    </article>
+  </main>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="scripts.js?v=20"></script>
+<script src="scripts.js?v=32"></script>
 </body>
 </html>
